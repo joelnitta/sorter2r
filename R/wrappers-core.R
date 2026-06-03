@@ -1,3 +1,13 @@
+#' Run the SORTER2 FormatReads step
+#'
+#' @param input Input file path.
+#' @param python Python executable to use.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param working_dir Working directory for the command.
+#' @param dry_run If `TRUE`, return the command without executing it.
+#' @param echo If `TRUE`, print the command before running it.
+#' @return A list describing the command execution.
+#' @export
 sorter2_format_reads <- function(
   input,
   python = Sys.getenv(
@@ -24,6 +34,18 @@ sorter2_format_reads <- function(
   )
 }
 
+#' Run the SORTER2 Stage1A step
+#'
+#' @param projname Project name.
+#' @param spades Logical flag for SPAdes.
+#' @param trim Logical flag for trimming.
+#' @param python Python executable to use.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param working_dir Working directory for the command.
+#' @param dry_run If `TRUE`, return the command without executing it.
+#' @param echo If `TRUE`, print the command before running it.
+#' @return A list describing the command execution.
+#' @export
 sorter2_stage1a <- function(
   projname,
   spades = TRUE,
@@ -59,6 +81,24 @@ sorter2_stage1a <- function(
   )
 }
 
+#' Run the SORTER2 Stage1B step
+#'
+#' @param workingdir Working directory containing the Stage1A output.
+#' @param ref Reference file path.
+#' @param loci Number of loci to process.
+#' @param clust2id Clustering threshold.
+#' @param recluster Logical flag for reclustering.
+#' @param contignum Contig count threshold.
+#' @param contiglen Contig length threshold.
+#' @param aliter Alignment iterations.
+#' @param indelrep Indel representation threshold.
+#' @param idformat Identifier format.
+#' @param python Python executable to use.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param dry_run If `TRUE`, return the command without executing it.
+#' @param echo If `TRUE`, print the command before running it.
+#' @return A list describing the command execution.
+#' @export
 sorter2_stage1b <- function(
   workingdir,
   ref,
@@ -111,6 +151,19 @@ sorter2_stage1b <- function(
   )
 }
 
+#' Run the SORTER2 Stage2 step
+#'
+#' @param workingdir Working directory containing the Stage1B output.
+#' @param phasequal Phase quality threshold.
+#' @param aliter Alignment iterations.
+#' @param indelrep Indel representation threshold.
+#' @param idformat Identifier format.
+#' @param python Python executable to use.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param dry_run If `TRUE`, return the command without executing it.
+#' @param echo If `TRUE`, print the command before running it.
+#' @return A list describing the command execution.
+#' @export
 sorter2_stage2 <- function(
   workingdir,
   phasequal = 20,
@@ -147,6 +200,23 @@ sorter2_stage2 <- function(
   )
 }
 
+#' Run the SORTER2 Stage3 step
+#'
+#' @param workingdir Working directory containing the Stage2 output.
+#' @param ref Reference file path.
+#' @param loci Number of loci to process.
+#' @param contigscafnum Contig/scaffold count threshold.
+#' @param contigscaflen Contig/scaffold length threshold.
+#' @param phasequal Phase quality threshold.
+#' @param aliter Alignment iterations.
+#' @param indelrep Indel representation threshold.
+#' @param filterundiff Logical flag for filtering undifferentiated loci.
+#' @param python Python executable to use.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param dry_run If `TRUE`, return the command without executing it.
+#' @param echo If `TRUE`, print the command before running it.
+#' @return A list describing the command execution.
+#' @export
 sorter2_stage3 <- function(
   workingdir,
   ref,
@@ -196,6 +266,21 @@ sorter2_stage3 <- function(
   )
 }
 
+#' Run the SORTER2 Processor step
+#'
+#' @param workingdir Working directory containing the SORTER2 outputs.
+#' @param repfilt Repeat filter threshold.
+#' @param majorclusters Number of major clusters.
+#' @param keepal Logical flag for keeping alignments.
+#' @param stage2 Logical flag for including Stage2 output.
+#' @param stage3 Logical flag for including Stage3 output.
+#' @param dovcf Logical flag for writing VCF output.
+#' @param python Python executable to use.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param dry_run If `TRUE`, return the command without executing it.
+#' @param echo If `TRUE`, print the command before running it.
+#' @return A list describing the command execution.
+#' @export
 sorter2_processor <- function(
   workingdir,
   repfilt = 0.50,

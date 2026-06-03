@@ -1,0 +1,146 @@
+test_that("sorter2_bool_flag normalizes logical and T/F inputs", {
+  expect_identical(sorter2_bool_flag(TRUE), "T")
+  expect_identical(sorter2_bool_flag(FALSE), "F")
+  expect_identical(sorter2_bool_flag("t"), "T")
+  expect_identical(sorter2_bool_flag(" F "), "F")
+  expect_error(sorter2_bool_flag("yes"), "Flag values must be logical")
+})
+
+test_that("sorter2_require_file and sorter2_require_dir validate paths", {
+  file_path <- tempfile("sorter2r-file-")
+  dir_path <- tempfile("sorter2r-dir-")
+  file.create(file_path)
+  dir.create(dir_path)
+
+  expect_identical(
+    sorter2_require_file(file_path),
+    normalizePath(file_path, winslash = "/", mustWork = TRUE)
+  )
+  expect_identical(
+    sorter2_require_dir(dir_path),
+    normalizePath(dir_path, winslash = "/", mustWork = TRUE)
+  )
+  expect_error(
+    sorter2_require_file(file.path(tempdir(), "missing-file")),
+    "does not exist"
+  )
+  expect_error(
+    sorter2_require_dir(file.path(tempdir(), "missing-dir")),
+    "does not exist"
+  )
+})
+
+test_that("sorter2_with_trailing_slash appends one slash", {
+  dir_path <- normalizePath(tempdir(), winslash = "/", mustWork = TRUE)
+  expect_identical(sorter2_with_trailing_slash(dir_path), paste0(dir_path, "/"))
+})
+
+test_that("sorter2_run serializes dry-run commands", {
+  script_dir <- tempfile("sorter2r-scripts-")
+  dir.create(script_dir)
+  file.create(file.path(script_dir, "SORTER2_Stage1A_TrimSPAdes.py"))
+
+  res <- sorter2_run(
+    script = "SORTER2_Stage1A_TrimSPAdes.py",
+    args = c("-n", "ProjectName", "-spades", "T", "-trim", "F"),
+    python = "python",
+    script_dir = script_dir,
+    working_dir = tempdir(),
+    dry_run = TRUE,
+    echo = FALSE
+  )
+
+  expect_true(res$success)
+  expect_identical(res$status, 0L)
+  expect_true(res$dry_run)
+  expect_match(res$command, "python")
+  expect_match(res$command, "SORTER2_Stage1A_TrimSPAdes.py")
+  expect_match(res$command, "'-n' 'ProjectName'")
+})
+
+test_that("wrapper dry-runs build expected command arguments", {
+  script_dir <- tempfile("sorter2r-scripts-")
+  dir.create(script_dir)
+
+  scripts <- c(
+    "SORTER2_FormatReads.py",
+    "SORTER2_Stage1A_TrimSPAdes.py",
+    "SORTER2_Stage1B_AssembleOrthologs.py",
+    "SORTER2_Stage2_PhaseOrthologs.py",
+    "SORTER2_Stage3_PhaseHybrids.py",
+    "SORTER2_Processor.py"
+  )
+  for (script in scripts) {
+    file.create(file.path(script_dir, script))
+  }
+
+  input_file <- tempfile("sorter2r-input-", fileext = ".fastq")
+  file.create(input_file)
+  ref_file <- tempfile("sorter2r-ref-", fileext = ".fasta")
+  file.create(ref_file)
+  working_dir <- tempfile("sorter2r-work-")
+  dir.create(working_dir)
+
+  format_res <- sorter2_format_reads(
+    input = input_file,
+    script_dir = script_dir,
+    working_dir = working_dir,
+    dry_run = TRUE,
+    echo = FALSE
+  )
+  expect_match(format_res$command, "SORTER2_FormatReads.py")
+  expect_match(format_res$command, basename(input_file))
+
+  stage1a_res <- sorter2_stage1a(
+    projname = "ProjectName",
+    script_dir = script_dir,
+    working_dir = working_dir,
+    dry_run = TRUE,
+    echo = FALSE
+  )
+  expect_match(stage1a_res$command, "'-n' 'ProjectName'")
+  expect_match(stage1a_res$command, "'-spades' 'T'")
+  expect_match(stage1a_res$command, "'-trim' 'T'")
+
+  stage1b_res <- sorter2_stage1b(
+    workingdir = working_dir,
+    ref = ref_file,
+    loci = 10,
+    script_dir = script_dir,
+    dry_run = TRUE,
+    echo = FALSE
+  )
+  expect_match(stage1b_res$command, "SORTER2_Stage1B_AssembleOrthologs.py")
+  expect_match(stage1b_res$command, "'-wd'")
+  expect_match(stage1b_res$command, "'-ref'")
+  expect_match(stage1b_res$command, "'-loci' '10'")
+
+  stage2_res <- sorter2_stage2(
+    workingdir = working_dir,
+    script_dir = script_dir,
+    dry_run = TRUE,
+    echo = FALSE
+  )
+  expect_match(stage2_res$command, "SORTER2_Stage2_PhaseOrthologs.py")
+  expect_match(stage2_res$command, "'-pq' '20'")
+
+  stage3_res <- sorter2_stage3(
+    workingdir = working_dir,
+    ref = ref_file,
+    loci = 10,
+    script_dir = script_dir,
+    dry_run = TRUE,
+    echo = FALSE
+  )
+  expect_match(stage3_res$command, "SORTER2_Stage3_PhaseHybrids.py")
+  expect_match(stage3_res$command, "'-fp' 'F'")
+
+  processor_res <- sorter2_processor(
+    workingdir = working_dir,
+    script_dir = script_dir,
+    dry_run = TRUE,
+    echo = FALSE
+  )
+  expect_match(processor_res$command, "SORTER2_Processor.py")
+  expect_match(processor_res$command, "'-dovcf' 'T'")
+})

@@ -45,6 +45,17 @@ sorter2_default_script_dir <- function() {
   installed
 }
 
+#' Run a SORTER2 Python script
+#'
+#' @param script Python script filename relative to the script directory.
+#' @param args Character vector of command-line arguments.
+#' @param python Python executable to use.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param working_dir Optional working directory for the command.
+#' @param dry_run If `TRUE`, return the command without executing it.
+#' @param echo If `TRUE`, print the command before running it.
+#' @return A list describing the command execution.
+#' @export
 sorter2_run <- function(
   script,
   args = character(),
@@ -88,12 +99,17 @@ sorter2_run <- function(
   stderr_file <- tempfile("sorter2r-stderr-")
   on.exit(unlink(c(stdout_file, stderr_file), force = TRUE), add = TRUE)
 
+  old_working_dir <- getwd()
+  on.exit(setwd(old_working_dir), add = TRUE)
+  if (!is.null(working_dir)) {
+    setwd(working_dir)
+  }
+
   exit_code <- system2(
     command = python,
     args = cmd_args,
     stdout = stdout_file,
-    stderr = stderr_file,
-    wd = working_dir
+    stderr = stderr_file
   )
 
   stdout <- if (file.exists(stdout_file)) {
