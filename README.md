@@ -27,13 +27,17 @@ res <- sorter2_stage1a(
   trim = TRUE,
   spades = TRUE,
   script_dir = "inst/python",
-  python = "python",
+  conda_env = "SORTER2",
   working_dir = ".",
   dry_run = TRUE
 )
 
 res$command
 ```
+
+You can also set `SORTER2R_CONDA_ENV` once instead of passing
+`conda_env` to each wrapper. If needed, set `SORTER2R_CONDA` to the path
+of a specific conda executable.
 
 ## Upstream sync workflow
 

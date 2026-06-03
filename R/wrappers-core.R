@@ -2,6 +2,8 @@
 #'
 #' @param input Input file path.
 #' @param python Python executable to use.
+#' @param conda_env Optional conda environment name.
+#' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param working_dir Working directory for the command.
 #' @param dry_run If `TRUE`, return the command without executing it.
@@ -14,6 +16,8 @@ sorter2_format_reads <- function(
     "SORTER2R_PYTHON",
     "python"
   ),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   working_dir = getwd(),
   dry_run = FALSE,
@@ -27,6 +31,8 @@ sorter2_format_reads <- function(
     script = "SORTER2_FormatReads.py",
     args = args,
     python = python,
+    conda_env = conda_env,
+    conda = conda,
     script_dir = script_dir,
     working_dir = working_dir,
     dry_run = dry_run,
@@ -40,6 +46,8 @@ sorter2_format_reads <- function(
 #' @param spades Logical flag for SPAdes.
 #' @param trim Logical flag for trimming.
 #' @param python Python executable to use.
+#' @param conda_env Optional conda environment name.
+#' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param working_dir Working directory for the command.
 #' @param dry_run If `TRUE`, return the command without executing it.
@@ -51,6 +59,8 @@ sorter2_stage1a <- function(
   spades = TRUE,
   trim = TRUE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   working_dir = getwd(),
   dry_run = FALSE,
@@ -74,6 +84,8 @@ sorter2_stage1a <- function(
     script = "SORTER2_Stage1A_TrimSPAdes.py",
     args = args,
     python = python,
+    conda_env = conda_env,
+    conda = conda,
     script_dir = script_dir,
     working_dir = working_dir,
     dry_run = dry_run,
@@ -94,6 +106,8 @@ sorter2_stage1a <- function(
 #' @param indelrep Indel representation threshold.
 #' @param idformat Identifier format.
 #' @param python Python executable to use.
+#' @param conda_env Optional conda environment name.
+#' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
@@ -111,6 +125,8 @@ sorter2_stage1b <- function(
   indelrep = 0.1,
   idformat = "onlysample",
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   dry_run = FALSE,
   echo = TRUE
@@ -145,6 +161,8 @@ sorter2_stage1b <- function(
     script = "SORTER2_Stage1B_AssembleOrthologs.py",
     args = args,
     python = python,
+    conda_env = conda_env,
+    conda = conda,
     script_dir = script_dir,
     dry_run = dry_run,
     echo = echo
@@ -159,6 +177,8 @@ sorter2_stage1b <- function(
 #' @param indelrep Indel representation threshold.
 #' @param idformat Identifier format.
 #' @param python Python executable to use.
+#' @param conda_env Optional conda environment name.
+#' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
@@ -171,6 +191,8 @@ sorter2_stage2 <- function(
   indelrep = 0.1,
   idformat = "phase",
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   dry_run = FALSE,
   echo = TRUE
@@ -194,6 +216,8 @@ sorter2_stage2 <- function(
     script = "SORTER2_Stage2_PhaseOrthologs.py",
     args = args,
     python = python,
+    conda_env = conda_env,
+    conda = conda,
     script_dir = script_dir,
     dry_run = dry_run,
     echo = echo
@@ -212,6 +236,8 @@ sorter2_stage2 <- function(
 #' @param indelrep Indel representation threshold.
 #' @param filterundiff Logical flag for filtering undifferentiated loci.
 #' @param python Python executable to use.
+#' @param conda_env Optional conda environment name.
+#' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
@@ -228,6 +254,8 @@ sorter2_stage3 <- function(
   indelrep = 0.1,
   filterundiff = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   dry_run = FALSE,
   echo = TRUE
@@ -260,6 +288,8 @@ sorter2_stage3 <- function(
     script = "SORTER2_Stage3_PhaseHybrids.py",
     args = args,
     python = python,
+    conda_env = conda_env,
+    conda = conda,
     script_dir = script_dir,
     dry_run = dry_run,
     echo = echo
@@ -276,6 +306,8 @@ sorter2_stage3 <- function(
 #' @param stage3 Logical flag for including Stage3 output.
 #' @param dovcf Logical flag for writing VCF output.
 #' @param python Python executable to use.
+#' @param conda_env Optional conda environment name.
+#' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
@@ -290,6 +322,8 @@ sorter2_processor <- function(
   stage3 = FALSE,
   dovcf = TRUE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   dry_run = FALSE,
   echo = TRUE
@@ -317,6 +351,8 @@ sorter2_processor <- function(
     script = "SORTER2_Processor.py",
     args = args,
     python = python,
+    conda_env = conda_env,
+    conda = conda,
     script_dir = script_dir,
     dry_run = dry_run,
     echo = echo

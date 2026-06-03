@@ -8,6 +8,8 @@ sorter2_run(
   script,
   args = character(),
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   working_dir = NULL,
   dry_run = FALSE,
@@ -20,6 +22,11 @@ sorter2_run(
 \item{args}{Character vector of command-line arguments.}
 
 \item{python}{Python executable to use.}
+
+\item{conda_env}{Optional conda environment name. If set, the command is run
+with \verb{conda run -n conda_env}.}
+
+\item{conda}{Conda executable to use when \code{conda_env} is set.}
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
 

@@ -58,6 +58,49 @@ test_that("sorter2_run serializes dry-run commands", {
   expect_match(res$command, "'-n' 'ProjectName'")
 })
 
+test_that("sorter2_run can serialize conda dry-run commands", {
+  script_dir <- tempfile("sorter2r-scripts-")
+  dir.create(script_dir)
+  file.create(file.path(script_dir, "SORTER2_Stage1A_TrimSPAdes.py"))
+
+  res <- sorter2_run(
+    script = "SORTER2_Stage1A_TrimSPAdes.py",
+    args = c("-n", "ProjectName"),
+    python = "python",
+    conda_env = "sorter2",
+    conda = "conda",
+    script_dir = script_dir,
+    working_dir = tempdir(),
+    dry_run = TRUE,
+    echo = FALSE
+  )
+
+  expect_true(res$success)
+  expect_identical(res$status, 0L)
+  expect_true(res$dry_run)
+  expect_match(res$command, "conda")
+  expect_match(res$command, "'run' '-n' 'sorter2' 'python'")
+  expect_match(res$command, "SORTER2_Stage1A_TrimSPAdes.py")
+})
+
+test_that("sorter2_run treats blank conda_env as direct python", {
+  script_dir <- tempfile("sorter2r-scripts-")
+  dir.create(script_dir)
+  file.create(file.path(script_dir, "SORTER2_Stage1A_TrimSPAdes.py"))
+
+  res <- sorter2_run(
+    script = "SORTER2_Stage1A_TrimSPAdes.py",
+    python = "python",
+    conda_env = NULL,
+    script_dir = script_dir,
+    dry_run = TRUE,
+    echo = FALSE
+  )
+
+  expect_match(res$command, "python")
+  expect_no_match(res$command, "'run' '-n'")
+})
+
 test_that("wrapper dry-runs build expected command arguments", {
   script_dir <- tempfile("sorter2r-scripts-")
   dir.create(script_dir)
@@ -143,4 +186,23 @@ test_that("wrapper dry-runs build expected command arguments", {
   )
   expect_match(processor_res$command, "SORTER2_Processor.py")
   expect_match(processor_res$command, "'-dovcf' 'T'")
+})
+
+test_that("wrapper dry-runs can use a conda environment", {
+  script_dir <- tempfile("sorter2r-scripts-")
+  dir.create(script_dir)
+  file.create(file.path(script_dir, "SORTER2_Stage1A_TrimSPAdes.py"))
+
+  stage1a_res <- sorter2_stage1a(
+    projname = "ProjectName",
+    conda_env = "sorter2",
+    script_dir = script_dir,
+    working_dir = tempdir(),
+    dry_run = TRUE,
+    echo = FALSE
+  )
+
+  expect_match(stage1a_res$command, "conda")
+  expect_match(stage1a_res$command, "'run' '-n' 'sorter2' 'python'")
+  expect_match(stage1a_res$command, "'-n' 'ProjectName'")
 })

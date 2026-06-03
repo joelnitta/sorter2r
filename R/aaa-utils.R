@@ -50,6 +50,9 @@ sorter2_default_script_dir <- function() {
 #' @param script Python script filename relative to the script directory.
 #' @param args Character vector of command-line arguments.
 #' @param python Python executable to use.
+#' @param conda_env Optional conda environment name. If set, the command is run
+#'   with `conda run -n conda_env`.
+#' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param working_dir Optional working directory for the command.
 #' @param dry_run If `TRUE`, return the command without executing it.
@@ -60,6 +63,8 @@ sorter2_run <- function(
   script,
   args = character(),
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   working_dir = NULL,
   dry_run = FALSE,
@@ -78,7 +83,30 @@ sorter2_run <- function(
   }
 
   cmd_args <- c(script_path, args)
-  command_string <- paste(c(shQuote(python), shQuote(cmd_args)), collapse = " ")
+  if (is.null(conda_env)) {
+    conda_env <- ""
+  } else {
+    conda_env <- as.character(conda_env)
+    if (length(conda_env) != 1L) {
+      stop("conda_env must be a single environment name.", call. = FALSE)
+    }
+    conda_env <- trimws(conda_env)
+  }
+  use_conda <- nzchar(conda_env)
+
+  if (use_conda) {
+    conda <- as.character(conda)
+    if (length(conda) != 1L || !nzchar(trimws(conda))) {
+      stop("conda must be a single executable path or command.", call. = FALSE)
+    }
+    command <- conda
+    command_args <- c("run", "-n", conda_env, python, cmd_args)
+  } else {
+    command <- python
+    command_args <- cmd_args
+  }
+
+  command_string <- paste(c(shQuote(command), shQuote(command_args)), collapse = " ")
 
   if (echo) {
     message("Running: ", command_string)
@@ -106,8 +134,8 @@ sorter2_run <- function(
   }
 
   exit_code <- system2(
-    command = python,
-    args = cmd_args,
+    command = command,
+    args = command_args,
     stdout = stdout_file,
     stderr = stderr_file
   )

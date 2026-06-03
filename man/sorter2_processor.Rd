@@ -13,6 +13,8 @@ sorter2_processor(
   stage3 = FALSE,
   dovcf = TRUE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   dry_run = FALSE,
   echo = TRUE
@@ -34,6 +36,10 @@ sorter2_processor(
 \item{dovcf}{Logical flag for writing VCF output.}
 
 \item{python}{Python executable to use.}
+
+\item{conda_env}{Optional conda environment name.}
+
+\item{conda}{Conda executable to use when \code{conda_env} is set.}
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
 

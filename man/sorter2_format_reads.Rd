@@ -7,6 +7,8 @@
 sorter2_format_reads(
   input,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   working_dir = getwd(),
   dry_run = FALSE,
@@ -17,6 +19,10 @@ sorter2_format_reads(
 \item{input}{Input file path.}
 
 \item{python}{Python executable to use.}
+
+\item{conda_env}{Optional conda environment name.}
+
+\item{conda}{Conda executable to use when \code{conda_env} is set.}
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
 
