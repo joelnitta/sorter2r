@@ -1,0 +1,17 @@
+Package: sorter2r
+Type: Package
+Title: R Wrappers for SORTER2 Python Pipeline
+Version: 0.0.1
+Authors@R: person("Joel", "Nitta", role = c("aut", "cre"),
+  email = "joel@example.com")
+Description: Thin R wrappers that run core SORTER2 Python scripts with
+  argument validation and consistent command execution behavior.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+  tools
+Suggests:
+  testthat (>= 3.0.0)
+Config/testthat/edition: 3
