@@ -1,2 +1,4 @@
 ^\.github$
 ^PROJECT_HANDOFF_PLAN\.md$
+^inst/dev-data$
+^inst/dev-data/.*$
