@@ -8,7 +8,7 @@
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
-#' @return A list describing the command execution.
+#' @return Path to `reads_dir` (for use with `tar_file()`).
 #' @export
 sorter2_format_reads <- function(
   input,
@@ -35,6 +35,7 @@ sorter2_format_reads <- function(
     dry_run = dry_run,
     echo = echo
   )
+  reads_dir
 }
 
 #' Run the SORTER2 Stage1A step
@@ -49,7 +50,7 @@ sorter2_format_reads <- function(
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
-#' @return A list describing the command execution.
+#' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage1a <- function(
   reads_dir,
@@ -86,6 +87,7 @@ sorter2_stage1a <- function(
     dry_run = dry_run,
     echo = echo
   )
+  output_dir
 }
 
 #' Run the SORTER2 Stage1B step
@@ -109,7 +111,7 @@ sorter2_stage1a <- function(
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
-#' @return A list describing the command execution.
+#' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage1b <- function(
   input_dir,
@@ -169,6 +171,7 @@ sorter2_stage1b <- function(
     dry_run = dry_run,
     echo = echo
   )
+  output_dir
 }
 
 #' Run the SORTER2 Stage2 step
@@ -188,7 +191,7 @@ sorter2_stage1b <- function(
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
-#' @return A list describing the command execution.
+#' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage2 <- function(
   input_assemblies,
@@ -236,6 +239,7 @@ sorter2_stage2 <- function(
     dry_run = dry_run,
     echo = echo
   )
+  output_dir
 }
 
 #' Run the SORTER2 Stage3 step
@@ -260,7 +264,7 @@ sorter2_stage2 <- function(
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
-#' @return A list describing the command execution.
+#' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage3 <- function(
   input_dir,
@@ -317,6 +321,7 @@ sorter2_stage3 <- function(
     dry_run = dry_run,
     echo = echo
   )
+  output_dir
 }
 
 #' Run the SORTER2 Processor step
@@ -339,7 +344,7 @@ sorter2_stage3 <- function(
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
-#' @return A list describing the command execution.
+#' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_processor <- function(
   input_dir,
@@ -389,4 +394,5 @@ sorter2_processor <- function(
     dry_run = dry_run,
     echo = echo
   )
+  output_dir
 }

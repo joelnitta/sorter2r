@@ -123,7 +123,7 @@ sorter2_format_ref <- function(input, output = NULL) {
 #' @param echo If `TRUE`, print the command before running it.
 #' @param success_codes Integer vector of exit codes treated as success.
 #'   Defaults to `0L`. Use `c(0L, 1L)` for scripts that exit with 1 on success.
-#' @return A list describing the command execution.
+#' @return `invisible(NULL)`. Stops with an error on non-zero exit.
 #' @export
 sorter2_run <- function(
   script,
@@ -180,55 +180,37 @@ sorter2_run <- function(
   }
 
   if (dry_run) {
-    return(list(
-      success = TRUE,
-      status = 0L,
-      command = command_string,
-      stdout = character(),
-      stderr = character(),
-      dry_run = TRUE
-    ))
+    return(invisible(NULL))
   }
 
-  stdout_file <- tempfile("sorter2r-stdout-")
-  stderr_file <- tempfile("sorter2r-stderr-")
-  on.exit(unlink(c(stdout_file, stderr_file), force = TRUE), add = TRUE)
-
-  old_working_dir <- getwd()
-  on.exit(setwd(old_working_dir), add = TRUE)
-  if (!is.null(working_dir)) {
-    setwd(working_dir)
-  }
-
-  exit_code <- system2(
+  p <- processx::process$new(
     command = command,
     args = command_args,
-    stdout = stdout_file,
-    stderr = stderr_file
+    stdout = "|",
+    stderr = "|",
+    wd = working_dir
   )
 
-  stdout <- if (file.exists(stdout_file)) {
-    readLines(stdout_file)
-  } else {
-    character()
-  }
-  stderr <- if (file.exists(stderr_file)) {
-    readLines(stderr_file)
-  } else {
-    character()
-  }
-
-  if (echo) {
-    if (length(stdout) > 0) message(paste(stdout, collapse = "\n"))
-    if (length(stderr) > 0) message(paste(stderr, collapse = "\n"))
+  while (TRUE) {
+    ready <- p$poll_io(timeout = 200L)
+    if (ready[["output"]] == "ready") {
+      for (l in p$read_output_lines()) message(l)
+    }
+    if (ready[["error"]] == "ready") {
+      for (l in p$read_error_lines()) message(l)
+    }
+    if (ready[["output"]] == "closed" && ready[["error"]] == "closed") break
   }
 
-  list(
-    success = as.integer(exit_code) %in% as.integer(success_codes),
-    status = as.integer(exit_code),
-    command = command_string,
-    stdout = stdout,
-    stderr = stderr,
-    dry_run = FALSE
-  )
+  p$wait()
+  exit_code <- p$get_exit_status()
+
+  if (!as.integer(exit_code) %in% as.integer(success_codes)) {
+    stop(
+      sprintf("Script failed (exit %d): %s", exit_code, script),
+      call. = FALSE
+    )
+  }
+
+  invisible(NULL)
 }
