@@ -4,7 +4,7 @@ import argparse
 import subprocess
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-n", "--projname", required=True, help='Name for SORTER Run')
+parser.add_argument("-o", "--outdir", required=True, help='Output directory for assembled results')
 parser.add_argument("-spades", "--spades", required=True, help='Run Spades Assembly? (T/F)')
 parser.add_argument("-trim", "--trim", required=True, help='Run Trim Galore? (T/F)')
 args = parser.parse_args()
@@ -13,8 +13,9 @@ args = parser.parse_args()
 #working directory iterator
 rootwd=os.getcwd()+'/'
 
-#Make Project Folder
-dst = rootwd + 'SORTER2_'+ args.projname +'/'
+#Output directory
+dst = args.outdir if args.outdir.endswith('/') else args.outdir + '/'
+os.makedirs(dst, exist_ok=True)
 wdlist = os.listdir(rootwd)
 print('Reads will be processed in:\n' + dst)
 
@@ -44,19 +45,35 @@ if args.trim == 'T':
 #Assemble Contigs with Spades
 if args.spades == 'T':
 
-	for file in os.listdir(dst):
-		if 'assembly' in file:
-			print("Running Spades on " + file)
-			os.chdir(dst + file)
-			for read in os.listdir(dst + file):
-				if 'R1_val_1.fq' in read:
-					R2 = read[:-11] + 'R2_val_2.fq'
-					subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (read, R2)], shell=True)
-					os.chdir(dst)
-				else:
-					continue
-		else:
-			continue
+	if args.trim == 'T':
+		for file in os.listdir(dst):
+			if 'assembly' in file:
+				print("Running Spades on " + file)
+				os.chdir(dst + file)
+				for read in os.listdir(dst + file):
+					if 'R1_val_1.fq' in read:
+						R2 = read[:-11] + 'R2_val_2.fq'
+						subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (read, R2)], shell=True)
+						os.chdir(dst)
+					else:
+						continue
+			else:
+				continue
+	else:
+		for file in wdlist:
+			if 'R1' in file and file.endswith('.fastq'):
+				filefolder=file.split('_')[0]+'_'+file.split('_')[1]+'_assembly'
+				readst= dst + filefolder + '/'
+				os.makedirs(readst, exist_ok=True)
+				print("Running Spades on " + file)
+				R1 = os.path.join(rootwd, file)
+				R2 = os.path.join(rootwd, file.replace('_R1.','_R2.'))
+				os.chdir(readst)
+				subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (R1, R2)], shell=True)
+				os.chdir(rootwd)
+			else:
+				continue
 
 
-sys.exit("Trimgalore and SPADES processing has finished, exiting script")
+print("Trimgalore and SPADES processing has finished, exiting script")
+sys.exit(0)

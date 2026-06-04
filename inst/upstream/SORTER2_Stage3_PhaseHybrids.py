@@ -22,6 +22,7 @@ import glob
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-wd", "--workingdir")
+parser.add_argument("-outdir", "--outputdir")
 parser.add_argument("-loci", "--locinum")
 parser.add_argument("-csn", "--contigscafnum")
 parser.add_argument("-csl", "--contigscaflen")
@@ -32,7 +33,10 @@ parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-fp", "--filterundiff")
 
 args = parser.parse_args()
-phaseset=args.workingdir + 'phaseset/'
+outdir = args.outputdir if args.outputdir else args.workingdir
+outdir = outdir if outdir.endswith('/') else outdir + '/'
+os.makedirs(outdir, exist_ok=True)
+phaseset=outdir + 'phaseset/'
 baitid1= ["L%d_" % x for x in range(int(args.locinum))]
 baitid= ["L%d" % x for x in range(int(args.locinum))]
 diploidclusters=args.workingdir + 'diploids_phased/'

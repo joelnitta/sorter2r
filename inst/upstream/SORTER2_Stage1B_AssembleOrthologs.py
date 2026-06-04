@@ -17,6 +17,7 @@ from Bio import SeqIO
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-wd", "--workingdir")
+parser.add_argument("-outdir", "--outputdir")
 parser.add_argument("-cl", "--clust2id")
 parser.add_argument("-reclust", "--recluster")
 parser.add_argument("-loci", "--locinum")
@@ -27,6 +28,9 @@ parser.add_argument("-al", "--aliter")
 parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-idformat", "--idformat")
 args = parser.parse_args()
+
+outdir = args.outputdir if args.outputdir.endswith('/') else args.outputdir + '/'
+os.makedirs(outdir, exist_ok=True)
 
 os.chdir(args.workingdir)
 
@@ -52,10 +56,10 @@ def check_folder(directory, folder_name):
 folders_to_check = ["diploidclusters", "diploids"]
 
 for folder_name in folders_to_check:
-	check_folder(args.workingdir, folder_name)
+	check_folder(outdir, folder_name)
 
-diploidclusters=args.workingdir + 'diploidclusters/'
-contigdir=args.workingdir + 'diploids/'
+diploidclusters=outdir + 'diploidclusters/'
+contigdir=outdir + 'diploids/'
 
 #Define function to change sequence IDs
 def replaceAll(file,searchExp,replaceExp):
@@ -147,14 +151,14 @@ if args.recluster == 'T':
 
 	for folder in os.listdir(contigdir):
 		os.chdir(contigdir)
-		os.remove(args.workingdir + 'diploids/'+ folder)
+		os.remove(outdir + 'diploids/'+ folder)
 
 	os.chdir(args.workingdir)
 
 
 	for folder in os.listdir(diploidclusters):
 		os.chdir(diploidclusters)
-		os.remove(args.workingdir + 'diploidclusters/'+ folder)
+		os.remove(outdir + 'diploidclusters/'+ folder)
 
 	os.chdir(args.workingdir)
 
@@ -275,14 +279,14 @@ if args.recluster == 'T':
 				for cid in clustid:
 					if cid in file:
 						with open(file, 'r') as infile:
-	   						for line in infile:
-	   							if '>' in line:
-	   								print(line)
-	   								linspl=line.split('_')
-	   								print(linspl)
-	   								name = linspl[0] + '_' + cid + linspl[1] + '_' + linspl[2] + '_'+ linspl[3]
-	   								print(name)
-	   								replaceAll(file, line, name)
+							for line in infile:
+								if '>' in line:
+									print(line)
+									linspl=line.split('_')
+									print(linspl)
+									name = linspl[0] + '_' + cid + linspl[1] + '_' + linspl[2] + '_'+ linspl[3]
+									print(name)
+									replaceAll(file, line, name)
 
 	os.chdir(contigdir)
 
@@ -324,7 +328,7 @@ if args.recluster == 'T':
 			if not 'trimmed_deint' in file:
 				src =contigdir + file
 				print(src)
-				dst = args.workingdir + 'diploidclusters/'+ file
+				dst = outdir + 'diploidclusters/'+ file
 				print(dst)
 				os.rename(src, dst)
 				print(file)
@@ -650,14 +654,14 @@ else:
 
 	for folder in os.listdir(contigdir):
 		os.chdir(contigdir)
-		os.remove(args.workingdir + 'diploids/'+ folder)
+		os.remove(outdir + 'diploids/'+ folder)
 
 	os.chdir(args.workingdir)
 
 
 	for folder in os.listdir(diploidclusters):
 		os.chdir(diploidclusters)
-		os.remove(args.workingdir + 'diploidclusters/'+ folder)
+		os.remove(outdir + 'diploidclusters/'+ folder)
 
 	os.chdir(args.workingdir)
 
@@ -835,7 +839,7 @@ else:
 			if not 'trimmed_deint' in file:
 				src =contigdir + file
 				print(src)
-				dst = args.workingdir + 'diploidclusters/'+ file
+				dst = outdir + 'diploidclusters/'+ file
 				print(dst)
 				os.rename(src, dst)
 				print(file)

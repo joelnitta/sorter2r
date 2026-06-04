@@ -19,6 +19,7 @@ from collections import defaultdict
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-wd", "--workingdir")
+parser.add_argument("-outdir", "--outputdir")
 parser.add_argument("-rep", "--repfilt")
 parser.add_argument("-mc", "--majorclusters")
 parser.add_argument("-al", "--keepal")
@@ -27,6 +28,9 @@ parser.add_argument("-st3", "--stage3")
 parser.add_argument("-dovcf", "--dovcf")
 args = parser.parse_args()
 
+outdir = args.outputdir if args.outputdir else args.workingdir
+outdir = outdir if outdir.endswith('/') else outdir + '/'
+os.makedirs(outdir, exist_ok=True)
 
 diploids = args.workingdir + 'diploids/'
 diploidclusters= args.workingdir + 'diploidclusters/'
@@ -248,11 +252,11 @@ if args.dovcf == 'T':
 	os.chdir(args.workingdir)
 
 	#make vcf-folder
-	os.makedirs('SORTER2Processor_VCF')
+	os.makedirs(outdir + 'SORTER2Processor_VCF', exist_ok=True)
 	mcstr=str(args.majorclusters)
 	countstr=str(outputcount)
 	ref = clustdir+countstr+'Loci_'+filtstr+'_'+mcstr+'MajorClusters_consensusrefs.fasta'
-	vcfdir = args.workingdir + 'SORTER2Processor_VCF/'
+	vcfdir = outdir + 'SORTER2Processor_VCF/'
 
 	#move references to vcf folder
 	shutil.copy(ref,vcfdir)
@@ -360,11 +364,11 @@ if args.dovcf == 'T':
 			writer.writerow([ind]+[HETDICT[ind][stat] for stat in stats])
 
 	with open('VCF_readstats1.csv', 'r') as infile:
-	    with open('VCF_readstats.csv', 'w') as outfile:
-		    data = infile.read()
-		    data = data.replace("]", "")
-		    data = data.replace("[", "")
-		    outfile.write(data)
+		with open('VCF_readstats.csv', 'w') as outfile:
+			data = infile.read()
+			data = data.replace("]", "")
+			data = data.replace("[", "")
+			outfile.write(data)
 
 	for file in os.listdir(vcfdir):
 		if file.endswith("readstats1.csv"):

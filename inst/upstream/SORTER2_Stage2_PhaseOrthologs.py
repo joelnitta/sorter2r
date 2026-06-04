@@ -15,15 +15,22 @@ import Bio
 from Bio import SeqIO
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-wd", "--workingdir")
+parser.add_argument("-wa", "--assemblydir")
+parser.add_argument("-wc", "--clusterdir")
+parser.add_argument("-outdir", "--outputdir")
 parser.add_argument("-pq", "--phasequal")
 parser.add_argument("-al", "--aliter")
 parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-idformat", "--idformat")
 args = parser.parse_args()
 
-diploidclusters = args.workingdir + 'diploidclusters/'
-contigdir=args.workingdir + 'diploids/'
+assemblydir = args.assemblydir if args.assemblydir.endswith('/') else args.assemblydir + '/'
+clusterdir = args.clusterdir if args.clusterdir.endswith('/') else args.clusterdir + '/'
+outdir = args.outputdir if args.outputdir.endswith('/') else args.outputdir + '/'
+os.makedirs(outdir, exist_ok=True)
+
+diploidclusters = clusterdir + 'diploidclusters/'
+contigdir=clusterdir + 'diploids/'
 
 
 #Make diploids and diploid clusters folders if needed
@@ -32,7 +39,7 @@ contigdir=args.workingdir + 'diploids/'
 def check_folder(directory, folder_name):
 	# Construct the full path of the folder
 	folder_path = os.path.join(directory, folder_name)
-	
+
 	# Check if the folder exists
 	if not os.path.exists(folder_path):
 		# Create the folder if it does not exist
@@ -44,11 +51,11 @@ def check_folder(directory, folder_name):
 folders_to_check = ["diploids_phased"]
 
 for folder_name in folders_to_check:
-	check_folder(args.workingdir, folder_name)
+	check_folder(outdir, folder_name)
 
 #Set Directory Variables
-phasedir = args.workingdir + 'diploids_phased/'
-direc=os.listdir(args.workingdir)
+phasedir = outdir + 'diploids_phased/'
+direc=os.listdir(assemblydir)
 map_contigs_to_baits_dir=sorted(os.listdir(contigdir))
 
 #Define function to change sequence IDs
@@ -121,10 +128,10 @@ def deinterleave_fasta(input_file, output_file):
 
 print("Removing any previous phase files...")
 
-os.chdir(args.workingdir)
+os.chdir(assemblydir)
 
 #Get rid of previous read statistics/heterozygosity summary table
-for file in os.listdir(args.workingdir):
+for file in os.listdir(assemblydir):
 	if file.endswith('readstats_fin.csv'):
 		os.remove('readstats_fin.csv')
 
@@ -135,76 +142,76 @@ for file in os.listdir(phasedir):
 
 os.chdir(diploidclusters)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("iploidclusters"):
-		os.chdir(args.workingdir + folder)
-		dirpath =  args.workingdir + folder + "/"
+		os.chdir(assemblydir + folder)
+		dirpath =  assemblydir + folder + "/"
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if file.endswith('_degap.fasta'):
 				os.remove(dirpath + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("iploidclusters"):
-		os.chdir(args.workingdir + folder)
-		dirpath =  args.workingdir + folder + "/"
+		os.chdir(assemblydir + folder)
+		dirpath =  assemblydir + folder + "/"
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if file.endswith('master.udb'):
 				os.remove(dirpath + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("iploidclusters"):
-		os.chdir(args.workingdir + folder)
-		dirpath =  args.workingdir + folder + "/"
+		os.chdir(assemblydir + folder)
+		dirpath =  assemblydir + folder + "/"
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if file.endswith('clusterannotated.fasta'):
 				os.remove(dirpath + file)
 
-os.chdir(args.workingdir)
+os.chdir(assemblydir)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		for file in os.listdir(args.workingdir + folder):
+		os.chdir(assemblydir + folder)
+		for file in os.listdir(assemblydir + folder):
 			if file.endswith('Final.fasta'):
-				os.remove(args.workingdir + folder + '/' + file)
+				os.remove(assemblydir + folder + '/' + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		for file in os.listdir(args.workingdir + folder):
+		os.chdir(assemblydir + folder)
+		for file in os.listdir(assemblydir + folder):
 			if file.endswith('.csi'):
-				os.remove(args.workingdir + folder + '/' + file)
+				os.remove(assemblydir + folder + '/' + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		for file in os.listdir(args.workingdir + folder):
+		os.chdir(assemblydir + folder)
+		for file in os.listdir(assemblydir + folder):
 			if file.endswith('.bam'):
-				os.remove(args.workingdir + folder + '/' + file)
+				os.remove(assemblydir + folder + '/' + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		for file in os.listdir(args.workingdir + folder):
+		os.chdir(assemblydir + folder)
+		for file in os.listdir(assemblydir + folder):
 			if file.endswith('vcf.gz'):
-				os.remove(args.workingdir + folder + '/' + file)
+				os.remove(assemblydir + folder + '/' + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		for file in os.listdir(args.workingdir + folder):
+		os.chdir(assemblydir + folder)
+		for file in os.listdir(assemblydir + folder):
 			if file.endswith('readstats.txt'):
-				os.remove(args.workingdir + folder + '/' + file)
+				os.remove(assemblydir + folder + '/' + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		for file in os.listdir(args.workingdir + folder):
+		os.chdir(assemblydir + folder)
+		for file in os.listdir(assemblydir + folder):
 			if file.startswith('het.'):
-				os.remove(args.workingdir + folder + '/' + file)
+				os.remove(assemblydir + folder + '/' + file)
 
 #Degap locus-clusters
 os.chdir(diploidclusters)
@@ -245,37 +252,37 @@ subprocess.call("usearch -makeudb_usearch ALLsamples_allcontigs_allbaits_cluster
 
 print('Preparing Phase Directories...')
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		dirpath = args.workingdir + folder + "/"
+		os.chdir(assemblydir + folder)
+		dirpath = assemblydir + folder + "/"
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if "annotated.fasta" in file:
 				os.remove(dirpath + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		dirpath =  args.workingdir + folder + "/"
+		os.chdir(assemblydir + folder)
+		dirpath =  assemblydir + folder + "/"
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if "Final.fasta" in file:
 				os.remove(dirpath + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		dirpath =  args.workingdir + folder + "/"
+		os.chdir(assemblydir + folder)
+		dirpath =  assemblydir + folder + "/"
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if "chimera.fasta" in file:
 				os.remove(dirpath + file)
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
-		os.chdir(args.workingdir + folder)
-		dirpath =  args.workingdir + folder + "/"
+		os.chdir(assemblydir + folder)
+		dirpath =  assemblydir + folder + "/"
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if "mapreads.bam" in file:
@@ -292,7 +299,7 @@ for file in os.listdir(diploidclusters):
 					linspl=line.split('_')
 					sample=linspl[2] + '_' + linspl[3].strip('\n') + '_allcontigs_allclusterbaits_annotated.fasta'
 					print(linspl)
-					with open(os.path.join(args.workingdir + linspl[2] + '_' + linspl[3].strip('\n') + '_assembly/', sample), 'a+') as idx:
+					with open(os.path.join(assemblydir + linspl[2] + '_' + linspl[3].strip('\n') + '_assembly/', sample), 'a+') as idx:
 						if not line.endswith('\n'):
 							idx.write('\n')
 						else:
@@ -308,21 +315,21 @@ for file in os.listdir(diploidclusters):
 									print(e)
 									break
 
-os.chdir(args.workingdir)
+os.chdir(assemblydir)
 
 
 #Map reads to consensus allele references, phase bi-allelic haplotypes
 for folder in direc:
 	if 'assembly' in folder:
-		os.chdir(args.workingdir + folder)
-		for baits in os.listdir(args.workingdir + folder):
+		os.chdir(assemblydir + folder)
+		for baits in os.listdir(assemblydir + folder):
 			if baits.endswith('allcontigs_allclusterbaits_annotated.fasta'):
-				os.chdir(args.workingdir + folder)
+				os.chdir(assemblydir + folder)
 				read = folder[:-8] + 'R1_val_1.fq'
 				print(read)
 				R2 = folder[:-8] + 'R2_val_2.fq'
 				print(R2)
-				dirpath = args.workingdir + folder + '/'
+				dirpath = assemblydir + folder + '/'
 				subprocess.call(["bwa index %s" % (baits)], shell=True)
 				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (dirpath + baits, dirpath + read, dirpath + R2, folder[:-8])], shell=True)
 				subprocess.call(["samtools sort  %smapreads.sam -o %s" % (dirpath+folder[:-8], dirpath+folder[:-8] + 'mapreads.bam')], shell=True)
@@ -355,7 +362,7 @@ for folder in direc:
 				#generate read statistics text file
 				bam = dirpath+folder[:-8] + 'mapreads.bam'
 				statfilename = folder[:-8] + "readstats.txt"
-				with open(os.path.join(args.workingdir + folder, statfilename), 'a+') as statfile:
+				with open(os.path.join(assemblydir + folder, statfilename), 'a+') as statfile:
 							statfile.write( folder[:-8] + " Read Statistics" + '\n')
 							subprocess.call(["samtools flagstat %s >> %s" % (bam, statfilename)], shell=True)
 							#get read depth
@@ -365,56 +372,56 @@ for folder in direc:
 							statfile.close()
 
 
-os.chdir(args.workingdir)
+os.chdir(assemblydir)
 
 # annotate phased fasta files with alternative phase
 for folder in direc:
 	if 'assembly' in folder:
-		os.chdir(args.workingdir + folder)
-		readir = os.listdir(args.workingdir + folder)
+		os.chdir(assemblydir + folder)
+		readir = os.listdir(assemblydir + folder)
 		subprocess.call(["pwd"], shell=True)
 		for file in readir:
 			if file.endswith("0_Final.fasta"):
 				with open(file, 'r') as infile:
- 					for line in infile:
- 						if '>' in line:
- 							print(line)
- 							name = line.rstrip('\n') + '_ph0' + '\n'
- 							print(name)
- 							replaceAll(file, line, name)
-os.chdir(args.workingdir)
+					for line in infile:
+						if '>' in line:
+							print(line)
+							name = line.rstrip('\n') + '_ph0' + '\n'
+							print(name)
+							replaceAll(file, line, name)
+os.chdir(assemblydir)
 
 for folder in direc:
 	if 'assembly' in folder:
-		os.chdir(args.workingdir + folder)
-		readir = os.listdir(args.workingdir + folder)
+		os.chdir(assemblydir + folder)
+		readir = os.listdir(assemblydir + folder)
 		subprocess.call(["pwd"], shell=True)
 		for file in readir:
 			if file.endswith("1_Final.fasta"):
 				with open(file, 'r') as infile:
- 					for line in infile:
- 						if '>' in line:
- 							print(line)
- 							name = line.rstrip('\n') + '_ph1' + '\n'
- 							print(name)
- 							replaceAll(file, line, name)
+					for line in infile:
+						if '>' in line:
+							print(line)
+							name = line.rstrip('\n') + '_ph1' + '\n'
+							print(name)
+							replaceAll(file, line, name)
 
-os.chdir(args.workingdir)
+os.chdir(assemblydir)
 
 ##Concatenate Phased seqs files
 for folder in direc:
 	if 'assembly' in folder:
-		os.chdir(args.workingdir + folder)
+		os.chdir(assemblydir + folder)
 		subprocess.call(["cat *_Final.fasta > %sallcontigs_allclusterbaits_contigs_phased.fasta" % (folder[:-8])], shell=True)
 
 #Move Phased allcontigs_allbaits files to args.contigdir 'diploids_phased/' directory
 for folder in direc:
 	if 'assembly' in folder:
-		os.chdir(args.workingdir + folder)
-		readir = os.listdir(args.workingdir + folder)
+		os.chdir(assemblydir + folder)
+		readir = os.listdir(assemblydir + folder)
 		for file in readir:
 			if file.endswith('_allcontigs_allclusterbaits_contigs_phased.fasta'):
-				src = args.workingdir + folder + '/' + file
+				src = assemblydir + folder + '/' + file
 				dst = phasedir + file
 				os.rename(src, dst)
 
@@ -431,13 +438,13 @@ for baitcluster in os.listdir(diploidclusters):
 
 for folder in map_contigs_to_baits_dir:
 		if folder.endswith('_'):
- 			for baitcluster in DICT2.keys(): 
- 				DICT2[baitcluster][folder + 'ph0']=[]
+			for baitcluster in DICT2.keys(): 
+				DICT2[baitcluster][folder + 'ph0']=[]
 
 for folder in map_contigs_to_baits_dir:
 		if folder.endswith('_'):
- 			for baitcluster in DICT2.keys(): 
- 				DICT2[baitcluster][folder + 'ph1']=[]
+			for baitcluster in DICT2.keys(): 
+				DICT2[baitcluster][folder + 'ph1']=[]
 
 #print(DICT2)
 
@@ -540,22 +547,22 @@ for file in os.listdir(phasedir):
 		os.remove(file)
 
 #compile stats
-os.chdir(args.workingdir)
+os.chdir(assemblydir)
 
 #Make dictionary of individuals for readstats and heterozygosity
 HETDICT= {}
 
-for folder in os.listdir(args.workingdir):
+for folder in os.listdir(assemblydir):
 	if folder.endswith("assembly"):
 		ind=folder[:-9]
 		print(ind)
 		if ind not in HETDICT:
 			HETDICT[ind]={}
 
-for samp in os.listdir(args.workingdir):
+for samp in os.listdir(assemblydir):
 	if samp.endswith('assembly'):
-		os.chdir(args.workingdir+samp)
-		for readstat in os.listdir(args.workingdir+samp):
+		os.chdir(assemblydir+samp)
+		for readstat in os.listdir(assemblydir+samp):
 			if readstat.endswith('readstats.txt'):
 				for ind in HETDICT:
 					if ind in readstat:
@@ -586,7 +593,7 @@ for samp in os.listdir(args.workingdir):
 											print(statlabel + ' = ' + statint)
 											HETDICT[ind][statlabel]=[]
 											HETDICT[ind][statlabel].append(int(float(statint)))
-os.chdir(args.workingdir)
+os.chdir(assemblydir)
 
 #get readstat values
 het_values_list = list(HETDICT.values())
@@ -604,12 +611,12 @@ with open('readstats.csv', 'w') as outfile:
 
 with open('readstats.csv', 'r') as infile:
     with open('readstats_fin.csv', 'w') as outfile:
-	    data = infile.read()
-	    data = data.replace("]", "")
-	    data = data.replace("[", "")
-	    outfile.write(data)
+        data = infile.read()
+        data = data.replace("]", "")
+        data = data.replace("[", "")
+        outfile.write(data)
 
-for file in os.listdir(args.workingdir):
+for file in os.listdir(assemblydir):
 	if file.endswith("readstats.csv"):
 		os.remove(file)
 
