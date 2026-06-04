@@ -2,7 +2,7 @@
 set -euo pipefail
 
 UPSTREAM_REPO="${UPSTREAM_REPO:-https://github.com/joelnitta/SORTER2.git}"
-UPSTREAM_REF="${UPSTREAM_REF:-main}"
+UPSTREAM_REF="${UPSTREAM_REF:-rpackage}"
 PKG_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PY_DST="${PKG_ROOT}/inst/python"
 TRACK_DST="${PKG_ROOT}/inst/upstream"
