@@ -5,24 +5,26 @@
 \title{Run the SORTER2 Stage1A step}
 \usage{
 sorter2_stage1a(
-  projname,
+  reads_dir,
+  output_dir,
   spades = TRUE,
   trim = TRUE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
-  working_dir = getwd(),
   dry_run = FALSE,
   echo = TRUE
 )
 }
 \arguments{
-\item{projname}{Project name.}
+\item{reads_dir}{Directory containing the input FASTQ files.}
 
-\item{spades}{Logical flag for SPAdes.}
+\item{output_dir}{Directory where the assembled output will be created.}
 
-\item{trim}{Logical flag for trimming.}
+\item{spades}{Logical flag for SPAdes assembly.}
+
+\item{trim}{Logical flag for TrimGalore trimming.}
 
 \item{python}{Python executable to use.}
 
@@ -31,8 +33,6 @@ sorter2_stage1a(
 \item{conda}{Conda executable to use when \code{conda_env} is set.}
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
-
-\item{working_dir}{Working directory for the command.}
 
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
 

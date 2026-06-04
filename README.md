@@ -13,31 +13,80 @@ constructs CLI calls, and executes the original Python entry points.
 - `sorter2_stage3()`
 - `sorter2_processor()`
 
+## Typical workflow
+
+Each function takes an explicit `reads_dir`/`input_dir` and `output_dir`,
+forming a linear pipeline where each step's output feeds the next.
+
+```r
+library(sorter2r)
+
+# Optional: rename raw FASTQ files according to a sample map CSV
+sorter2_format_reads(
+  input     = "samples.csv",
+  reads_dir = "raw_reads/"
+)
+
+# Stage 1A — trim (optional) and/or assemble contigs with SPAdes
+sorter2_stage1a(
+  reads_dir  = "raw_reads/",
+  output_dir = "results/stage1a/",
+  trim       = TRUE,
+  spades     = TRUE,
+  conda_env  = "SORTER2"
+)
+
+# Stage 1B — cluster assembled contigs into ortholog groups
+sorter2_stage1b(
+  input_dir  = "results/stage1a/",
+  output_dir = "results/stage1b/",
+  ref        = "reference/baits.fasta",
+  loci       = 100,
+  conda_env  = "SORTER2"
+)
+
+# Stage 2 — phase bi-allelic haplotypes
+# needs assembly dirs (Stage 1A) for FASTQ files and
+# diploidclusters (Stage 1B) for ortholog clusters
+sorter2_stage2(
+  input_assemblies = "results/stage1a/",
+  input_clusters   = "results/stage1b/",
+  output_dir       = "results/stage2/",
+  conda_env        = "SORTER2"
+)
+
+# Stage 3 — phase hybrid loci
+# Note: results/stage2/ must also contain a phaseset/ subdirectory
+# with per-sample assembly dirs (see SORTER2 documentation)
+sorter2_stage3(
+  input_dir  = "results/stage2/",
+  output_dir = "results/stage3/",
+  ref        = "reference/baits.fasta",
+  loci       = 100,
+  conda_env  = "SORTER2"
+)
+
+# Processor — filter and summarise final outputs
+sorter2_processor(
+  input_dir  = "results/stage3/",
+  output_dir = "results/processed/",
+  conda_env  = "SORTER2"
+)
+```
+
+Set `dry_run = TRUE` on any call to preview the command without running it.
+Set `SORTER2R_CONDA_ENV` once to avoid repeating `conda_env` on every call:
+
+```r
+Sys.setenv(SORTER2R_CONDA_ENV = "SORTER2")
+```
+
 ## Development usage from source
 
 1. Vendor scripts to `inst/python/` (see sync script below).
-2. Point wrappers to that folder with `script_dir`.
+2. Pass `script_dir = "inst/python"` to any wrapper (or set no `script_dir`
+   once the package is installed — it resolves automatically).
 3. Use a configured Python/conda environment that contains SORTER2 tools.
-
-Example:
-
-```r
-res <- sorter2_stage1a(
-  projname = "ProjectName",
-  trim = TRUE,
-  spades = TRUE,
-  script_dir = "inst/python",
-  conda_env = "SORTER2",
-  working_dir = ".",
-  dry_run = TRUE
-)
-
-res$command
-```
-
-You can also set `SORTER2R_CONDA_ENV` once instead of passing
-`conda_env` to each wrapper. If needed, set `SORTER2R_CONDA` to the path
-of a specific conda executable.
 
 ## Upstream sync workflow
 

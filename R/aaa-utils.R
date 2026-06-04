@@ -121,6 +121,8 @@ sorter2_format_ref <- function(input, output = NULL) {
 #' @param working_dir Optional working directory for the command.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
+#' @param success_codes Integer vector of exit codes treated as success.
+#'   Defaults to `0L`. Use `c(0L, 1L)` for scripts that exit with 1 on success.
 #' @return A list describing the command execution.
 #' @export
 sorter2_run <- function(
@@ -132,7 +134,8 @@ sorter2_run <- function(
   script_dir = NULL,
   working_dir = NULL,
   dry_run = FALSE,
-  echo = TRUE
+  echo = TRUE,
+  success_codes = 0L
 ) {
   if (is.null(script_dir)) {
     script_dir <- sorter2_default_script_dir()
@@ -215,8 +218,13 @@ sorter2_run <- function(
     character()
   }
 
+  if (echo) {
+    if (length(stdout) > 0) message(paste(stdout, collapse = "\n"))
+    if (length(stderr) > 0) message(paste(stderr, collapse = "\n"))
+  }
+
   list(
-    success = identical(exit_code, 0L),
+    success = as.integer(exit_code) %in% as.integer(success_codes),
     status = as.integer(exit_code),
     command = command_string,
     stdout = stdout,

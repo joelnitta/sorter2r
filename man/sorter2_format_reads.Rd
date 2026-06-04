@@ -6,17 +6,19 @@
 \usage{
 sorter2_format_reads(
   input,
+  reads_dir = getwd(),
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
-  working_dir = getwd(),
   dry_run = FALSE,
   echo = TRUE
 )
 }
 \arguments{
-\item{input}{Input file path.}
+\item{input}{Input CSV/TSV file mapping original filenames to sample IDs.}
+
+\item{reads_dir}{Directory containing the FASTQ files to rename.}
 
 \item{python}{Python executable to use.}
 
@@ -25,8 +27,6 @@ sorter2_format_reads(
 \item{conda}{Conda executable to use when \code{conda_env} is set.}
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
-
-\item{working_dir}{Working directory for the command.}
 
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
 

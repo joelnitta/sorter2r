@@ -5,7 +5,8 @@
 \title{Run the SORTER2 Stage3 step}
 \usage{
 sorter2_stage3(
-  workingdir,
+  input_dir,
+  output_dir = input_dir,
   ref,
   loci,
   contigscafnum = 20,
@@ -23,7 +24,13 @@ sorter2_stage3(
 )
 }
 \arguments{
-\item{workingdir}{Working directory containing the Stage2 output.}
+\item{input_dir}{Directory containing the Stage2 output (\verb{diploids_phased/}
+and \verb{diploidclusters/}). Also expected to contain a \verb{phaseset/}
+subdirectory with per-sample assembly dirs (user-created).}
+
+\item{output_dir}{Directory where Stage3 results will be written. Currently
+must equal \code{input_dir}; full separation will be supported in a future
+update.}
 
 \item{ref}{Reference file path.}
 

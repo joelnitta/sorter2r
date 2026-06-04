@@ -42,7 +42,7 @@ test_that("sorter2_run serializes dry-run commands", {
 
   res <- sorter2_run(
     script = "SORTER2_Stage1A_TrimSPAdes.py",
-    args = c("-n", "ProjectName", "-spades", "T", "-trim", "F"),
+    args = c("-o", "/tmp/out", "-spades", "T", "-trim", "F"),
     python = "python",
     script_dir = script_dir,
     working_dir = tempdir(),
@@ -55,7 +55,7 @@ test_that("sorter2_run serializes dry-run commands", {
   expect_true(res$dry_run)
   expect_match(res$command, "python")
   expect_match(res$command, "SORTER2_Stage1A_TrimSPAdes.py")
-  expect_match(res$command, "'-n' 'ProjectName'")
+  expect_match(res$command, "'-o'")
 })
 
 test_that("sorter2_run can serialize conda dry-run commands", {
@@ -65,7 +65,7 @@ test_that("sorter2_run can serialize conda dry-run commands", {
 
   res <- sorter2_run(
     script = "SORTER2_Stage1A_TrimSPAdes.py",
-    args = c("-n", "ProjectName"),
+    args = c("-o", "/tmp/out"),
     python = "python",
     conda_env = "sorter2",
     conda = "conda",
@@ -121,13 +121,16 @@ test_that("wrapper dry-runs build expected command arguments", {
   file.create(input_file)
   ref_file <- tempfile("sorter2r-ref-", fileext = ".fasta")
   file.create(ref_file)
-  working_dir <- tempfile("sorter2r-work-")
-  dir.create(working_dir)
+  reads_dir <- tempfile("sorter2r-reads-")
+  dir.create(reads_dir)
+  input_dir <- tempfile("sorter2r-input-")
+  dir.create(input_dir)
+  output_dir <- tempfile("sorter2r-output-")
 
   format_res <- sorter2_format_reads(
     input = input_file,
+    reads_dir = reads_dir,
     script_dir = script_dir,
-    working_dir = working_dir,
     dry_run = TRUE,
     echo = FALSE
   )
@@ -135,18 +138,20 @@ test_that("wrapper dry-runs build expected command arguments", {
   expect_match(format_res$command, basename(input_file))
 
   stage1a_res <- sorter2_stage1a(
-    projname = "ProjectName",
+    reads_dir = reads_dir,
+    output_dir = output_dir,
     script_dir = script_dir,
-    working_dir = working_dir,
     dry_run = TRUE,
     echo = FALSE
   )
-  expect_match(stage1a_res$command, "'-n' 'ProjectName'")
+  expect_match(stage1a_res$command, "SORTER2_Stage1A_TrimSPAdes.py")
+  expect_match(stage1a_res$command, "'-o'")
   expect_match(stage1a_res$command, "'-spades' 'T'")
   expect_match(stage1a_res$command, "'-trim' 'T'")
 
   stage1b_res <- sorter2_stage1b(
-    workingdir = working_dir,
+    input_dir = input_dir,
+    output_dir = output_dir,
     ref = ref_file,
     loci = 10,
     script_dir = script_dir,
@@ -155,20 +160,26 @@ test_that("wrapper dry-runs build expected command arguments", {
   )
   expect_match(stage1b_res$command, "SORTER2_Stage1B_AssembleOrthologs.py")
   expect_match(stage1b_res$command, "'-wd'")
+  expect_match(stage1b_res$command, "'-outdir'")
   expect_match(stage1b_res$command, "'-ref'")
   expect_match(stage1b_res$command, "'-loci' '10'")
 
   stage2_res <- sorter2_stage2(
-    workingdir = working_dir,
+    input_assemblies = input_dir,
+    input_clusters = input_dir,
+    output_dir = output_dir,
     script_dir = script_dir,
     dry_run = TRUE,
     echo = FALSE
   )
   expect_match(stage2_res$command, "SORTER2_Stage2_PhaseOrthologs.py")
+  expect_match(stage2_res$command, "'-wa'")
+  expect_match(stage2_res$command, "'-wc'")
   expect_match(stage2_res$command, "'-pq' '20'")
 
   stage3_res <- sorter2_stage3(
-    workingdir = working_dir,
+    input_dir = input_dir,
+    output_dir = output_dir,
     ref = ref_file,
     loci = 10,
     script_dir = script_dir,
@@ -176,15 +187,18 @@ test_that("wrapper dry-runs build expected command arguments", {
     echo = FALSE
   )
   expect_match(stage3_res$command, "SORTER2_Stage3_PhaseHybrids.py")
+  expect_match(stage3_res$command, "'-outdir'")
   expect_match(stage3_res$command, "'-fp' 'F'")
 
   processor_res <- sorter2_processor(
-    workingdir = working_dir,
+    input_dir = input_dir,
+    output_dir = output_dir,
     script_dir = script_dir,
     dry_run = TRUE,
     echo = FALSE
   )
   expect_match(processor_res$command, "SORTER2_Processor.py")
+  expect_match(processor_res$command, "'-outdir'")
   expect_match(processor_res$command, "'-dovcf' 'T'")
 })
 
@@ -193,16 +207,20 @@ test_that("wrapper dry-runs can use a conda environment", {
   dir.create(script_dir)
   file.create(file.path(script_dir, "SORTER2_Stage1A_TrimSPAdes.py"))
 
+  reads_dir <- tempfile("sorter2r-reads-")
+  dir.create(reads_dir)
+  output_dir <- tempfile("sorter2r-output-")
+
   stage1a_res <- sorter2_stage1a(
-    projname = "ProjectName",
+    reads_dir = reads_dir,
+    output_dir = output_dir,
     conda_env = "sorter2",
     script_dir = script_dir,
-    working_dir = tempdir(),
     dry_run = TRUE,
     echo = FALSE
   )
 
   expect_match(stage1a_res$command, "conda")
   expect_match(stage1a_res$command, "'run' '-n' 'sorter2' 'python'")
-  expect_match(stage1a_res$command, "'-n' 'ProjectName'")
+  expect_match(stage1a_res$command, "'-o'")
 })

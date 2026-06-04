@@ -1,30 +1,27 @@
 #' Run the SORTER2 FormatReads step
 #'
-#' @param input Input file path.
+#' @param input Input CSV/TSV file mapping original filenames to sample IDs.
+#' @param reads_dir Directory containing the FASTQ files to rename.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
-#' @param working_dir Working directory for the command.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
 #' @return A list describing the command execution.
 #' @export
 sorter2_format_reads <- function(
   input,
-  python = Sys.getenv(
-    "SORTER2R_PYTHON",
-    "python"
-  ),
+  reads_dir = getwd(),
+  python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
-  working_dir = getwd(),
   dry_run = FALSE,
   echo = TRUE
 ) {
   input <- sorter2_require_file(input, "input")
-  working_dir <- sorter2_require_dir(working_dir, "working_dir")
+  reads_dir <- sorter2_require_dir(reads_dir, "reads_dir")
 
   args <- c("-i", basename(input))
   sorter2_run(
@@ -34,7 +31,7 @@ sorter2_format_reads <- function(
     conda_env = conda_env,
     conda = conda,
     script_dir = script_dir,
-    working_dir = working_dir,
+    working_dir = reads_dir,
     dry_run = dry_run,
     echo = echo
   )
@@ -42,38 +39,36 @@ sorter2_format_reads <- function(
 
 #' Run the SORTER2 Stage1A step
 #'
-#' @param projname Project name.
-#' @param spades Logical flag for SPAdes.
-#' @param trim Logical flag for trimming.
+#' @param reads_dir Directory containing the input FASTQ files.
+#' @param output_dir Directory where the assembled output will be created.
+#' @param spades Logical flag for SPAdes assembly.
+#' @param trim Logical flag for TrimGalore trimming.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
-#' @param working_dir Working directory for the command.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
 #' @return A list describing the command execution.
 #' @export
 sorter2_stage1a <- function(
-  projname,
+  reads_dir,
+  output_dir,
   spades = TRUE,
   trim = TRUE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
-  working_dir = getwd(),
   dry_run = FALSE,
   echo = TRUE
 ) {
-  if (!nzchar(trimws(projname))) {
-    stop("projname must be non-empty.", call. = FALSE)
-  }
-  working_dir <- sorter2_require_dir(working_dir, "working_dir")
+  reads_dir <- sorter2_require_dir(reads_dir, "reads_dir")
+  output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
 
   args <- c(
-    "-n",
-    projname,
+    "-o",
+    output_dir,
     "-spades",
     sorter2_bool_flag(spades),
     "-trim",
@@ -87,7 +82,7 @@ sorter2_stage1a <- function(
     conda_env = conda_env,
     conda = conda,
     script_dir = script_dir,
-    working_dir = working_dir,
+    working_dir = reads_dir,
     dry_run = dry_run,
     echo = echo
   )
@@ -95,7 +90,10 @@ sorter2_stage1a <- function(
 
 #' Run the SORTER2 Stage1B step
 #'
-#' @param workingdir Working directory containing the Stage1A output.
+#' @param input_dir Directory containing the Stage1A output
+#'   (`*_assembly/` subdirs with SPAdes contigs).
+#' @param output_dir Directory where `diploids/` and `diploidclusters/` will
+#'   be created.
 #' @param ref Reference file path.
 #' @param loci Number of loci to process.
 #' @param clust2id Clustering threshold.
@@ -114,7 +112,8 @@ sorter2_stage1a <- function(
 #' @return A list describing the command execution.
 #' @export
 sorter2_stage1b <- function(
-  workingdir,
+  input_dir,
+  output_dir,
   ref,
   loci,
   clust2id = 0.70,
@@ -131,12 +130,15 @@ sorter2_stage1b <- function(
   dry_run = FALSE,
   echo = TRUE
 ) {
-  workingdir <- sorter2_with_trailing_slash(workingdir)
+  input_dir <- sorter2_with_trailing_slash(input_dir)
+  output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
   ref <- sorter2_require_file(ref, "ref")
 
   args <- c(
     "-wd",
-    workingdir,
+    input_dir,
+    "-outdir",
+    output_dir,
     "-ref",
     ref,
     "-loci",
@@ -171,7 +173,11 @@ sorter2_stage1b <- function(
 
 #' Run the SORTER2 Stage2 step
 #'
-#' @param workingdir Working directory containing the Stage1B output.
+#' @param input_assemblies Directory containing the Stage1A output
+#'   (`*_assembly/` subdirs with trimmed FASTQ files).
+#' @param input_clusters Directory containing the Stage1B output
+#'   (`diploidclusters/` and `diploids/` subdirs).
+#' @param output_dir Directory where `diploids_phased/` will be created.
 #' @param phasequal Phase quality threshold.
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
@@ -185,7 +191,9 @@ sorter2_stage1b <- function(
 #' @return A list describing the command execution.
 #' @export
 sorter2_stage2 <- function(
-  workingdir,
+  input_assemblies,
+  input_clusters,
+  output_dir,
   phasequal = 20,
   aliter = 1000,
   indelrep = 0.1,
@@ -197,11 +205,17 @@ sorter2_stage2 <- function(
   dry_run = FALSE,
   echo = TRUE
 ) {
-  workingdir <- sorter2_with_trailing_slash(workingdir)
+  input_assemblies <- sorter2_with_trailing_slash(input_assemblies)
+  input_clusters <- sorter2_with_trailing_slash(input_clusters)
+  output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
 
   args <- c(
-    "-wd",
-    workingdir,
+    "-wa",
+    input_assemblies,
+    "-wc",
+    input_clusters,
+    "-outdir",
+    output_dir,
     "-pq",
     as.character(as.integer(phasequal)),
     "-al",
@@ -226,7 +240,12 @@ sorter2_stage2 <- function(
 
 #' Run the SORTER2 Stage3 step
 #'
-#' @param workingdir Working directory containing the Stage2 output.
+#' @param input_dir Directory containing the Stage2 output (`diploids_phased/`
+#'   and `diploidclusters/`). Also expected to contain a `phaseset/`
+#'   subdirectory with per-sample assembly dirs (user-created).
+#' @param output_dir Directory where Stage3 results will be written. Currently
+#'   must equal `input_dir`; full separation will be supported in a future
+#'   update.
 #' @param ref Reference file path.
 #' @param loci Number of loci to process.
 #' @param contigscafnum Contig/scaffold count threshold.
@@ -244,7 +263,8 @@ sorter2_stage2 <- function(
 #' @return A list describing the command execution.
 #' @export
 sorter2_stage3 <- function(
-  workingdir,
+  input_dir,
+  output_dir = input_dir,
   ref,
   loci,
   contigscafnum = 20,
@@ -260,12 +280,15 @@ sorter2_stage3 <- function(
   dry_run = FALSE,
   echo = TRUE
 ) {
-  workingdir <- sorter2_with_trailing_slash(workingdir)
+  input_dir <- sorter2_with_trailing_slash(input_dir)
+  output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
   ref <- sorter2_require_file(ref, "ref")
 
   args <- c(
     "-wd",
-    workingdir,
+    input_dir,
+    "-outdir",
+    output_dir,
     "-ref",
     ref,
     "-loci",
@@ -298,7 +321,12 @@ sorter2_stage3 <- function(
 
 #' Run the SORTER2 Processor step
 #'
-#' @param workingdir Working directory containing the SORTER2 outputs.
+#' @param input_dir Directory containing the SORTER2 pipeline outputs
+#'   (`diploids/`, `diploidclusters/`, and optionally `diploids_phased/` and
+#'   `phaseset/`).
+#' @param output_dir Directory where processed results will be written.
+#'   Currently must equal `input_dir`; full separation will be supported in a
+#'   future update.
 #' @param repfilt Repeat filter threshold.
 #' @param majorclusters Number of major clusters.
 #' @param keepal Logical flag for keeping alignments.
@@ -314,7 +342,8 @@ sorter2_stage3 <- function(
 #' @return A list describing the command execution.
 #' @export
 sorter2_processor <- function(
-  workingdir,
+  input_dir,
+  output_dir = input_dir,
   repfilt = 0.50,
   majorclusters = 2,
   keepal = TRUE,
@@ -328,11 +357,14 @@ sorter2_processor <- function(
   dry_run = FALSE,
   echo = TRUE
 ) {
-  workingdir <- sorter2_with_trailing_slash(workingdir)
+  input_dir <- sorter2_with_trailing_slash(input_dir)
+  output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
 
   args <- c(
     "-wd",
-    workingdir,
+    input_dir,
+    "-outdir",
+    output_dir,
     "-rep",
     as.character(repfilt),
     "-mc",

@@ -5,7 +5,9 @@
 \title{Run the SORTER2 Stage2 step}
 \usage{
 sorter2_stage2(
-  workingdir,
+  input_assemblies,
+  input_clusters,
+  output_dir,
   phasequal = 20,
   aliter = 1000,
   indelrep = 0.1,
@@ -19,7 +21,13 @@ sorter2_stage2(
 )
 }
 \arguments{
-\item{workingdir}{Working directory containing the Stage1B output.}
+\item{input_assemblies}{Directory containing the Stage1A output
+(\verb{*_assembly/} subdirs with trimmed FASTQ files).}
+
+\item{input_clusters}{Directory containing the Stage1B output
+(\verb{diploidclusters/} and \verb{diploids/} subdirs).}
+
+\item{output_dir}{Directory where \verb{diploids_phased/} will be created.}
 
 \item{phasequal}{Phase quality threshold.}
 

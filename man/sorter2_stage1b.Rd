@@ -5,7 +5,8 @@
 \title{Run the SORTER2 Stage1B step}
 \usage{
 sorter2_stage1b(
-  workingdir,
+  input_dir,
+  output_dir,
   ref,
   loci,
   clust2id = 0.7,
@@ -24,7 +25,11 @@ sorter2_stage1b(
 )
 }
 \arguments{
-\item{workingdir}{Working directory containing the Stage1A output.}
+\item{input_dir}{Directory containing the Stage1A output
+(\verb{*_assembly/} subdirs with SPAdes contigs).}
+
+\item{output_dir}{Directory where \verb{diploids/} and \verb{diploidclusters/} will
+be created.}
 
 \item{ref}{Reference file path.}
 

@@ -5,7 +5,8 @@
 \title{Run the SORTER2 Processor step}
 \usage{
 sorter2_processor(
-  workingdir,
+  input_dir,
+  output_dir = input_dir,
   repfilt = 0.5,
   majorclusters = 2,
   keepal = TRUE,
@@ -21,7 +22,13 @@ sorter2_processor(
 )
 }
 \arguments{
-\item{workingdir}{Working directory containing the SORTER2 outputs.}
+\item{input_dir}{Directory containing the SORTER2 pipeline outputs
+(\verb{diploids/}, \verb{diploidclusters/}, and optionally \verb{diploids_phased/} and
+\verb{phaseset/}).}
+
+\item{output_dir}{Directory where processed results will be written.
+Currently must equal \code{input_dir}; full separation will be supported in a
+future update.}
 
 \item{repfilt}{Repeat filter threshold.}
 
