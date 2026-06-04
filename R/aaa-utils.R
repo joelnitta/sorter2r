@@ -45,6 +45,70 @@ sorter2_default_script_dir <- function() {
   installed
 }
 
+#' Reformat a reference FASTA for SORTER2
+#'
+#' Rewrites sequence IDs to the `>L{n}_{Family-Genus-species}` format
+#' required by Stage 1B. The locus number `n` is taken from the `L{n}`
+#' substring after the last `-` in the original ID; sequences whose
+#' post-hyphen tag does not already carry an `L{n}_` prefix are assigned
+#' sequential numbers starting after the highest embedded one. The
+#' taxonomic label (fields 2–4 of the original `_`-delimited name) is
+#' appended with `-` as a separator, ensuring every output ID is unique.
+#'
+#' @param input Path to the input reference FASTA file.
+#' @param output Path for the reformatted output file. Defaults to the input
+#'   path with `_sorter2` appended before the extension.
+#' @return Path to the output file.
+#' @export
+sorter2_format_ref <- function(input, output = NULL) {
+  input <- sorter2_require_file(input, "input")
+
+  if (is.null(output)) {
+    output <- paste0(
+      tools::file_path_sans_ext(input), "_sorter2.fasta"
+    )
+  }
+
+  lines <- readLines(input)
+  header_idx <- grep("^>", lines)
+
+  raw_names <- sub("^>", "", lines[header_idx])
+
+  # Post-hyphen substring identifies the locus group
+  locus_tags <- sub(".*-", "", raw_names)
+
+  # Assign locus numbers: preserve embedded L{n} where present, else sequential
+  unique_tags <- unique(locus_tags)
+  has_ln <- grepl("^L[0-9]+_", unique_tags)
+
+  existing_nums <- as.integer(
+    sub("^L([0-9]+)_.*", "\\1", unique_tags[has_ln])
+  )
+  next_n <- if (length(existing_nums)) max(existing_nums) else 0L
+
+  locus_num <- integer(length(unique_tags))
+  names(locus_num) <- unique_tags
+  locus_num[has_ln] <- as.integer(
+    sub("^L([0-9]+)_.*", "\\1", unique_tags[has_ln])
+  )
+  for (tag in unique_tags[!has_ln]) {
+    next_n <- next_n + 1L
+    locus_num[[tag]] <- next_n
+  }
+
+  # Taxonomic label: fields 2-4 of the original name (family, genus, species)
+  taxon <- vapply(strsplit(raw_names, "_"), function(parts) {
+    paste(parts[2:4], collapse = "-")
+  }, character(1))
+
+  lines[header_idx] <- paste0(
+    ">L", locus_num[locus_tags], "_", taxon
+  )
+
+  writeLines(lines, output)
+  normalizePath(output, winslash = "/", mustWork = TRUE)
+}
+
 #' Run a SORTER2 Python script
 #'
 #' @param script Python script filename relative to the script directory.
