@@ -66,6 +66,12 @@ diploidclusters=phaseddir + 'diploids_phased/'
 diploid_db = phaseddir + 'diploids_phased/diploid_master.udb'
 
 
+def remove_if_exists(path):
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
+
 # #Define command to change sequence IDs
 def replaceAll(file,searchExp,replaceExp):
 	for line in fileinput.input(file, inplace=1):
@@ -216,7 +222,7 @@ for folder in os.listdir(phaseset):
 						src = folder +'_contigmap.fa'
 						dst = dirpath + folder + '_contigmap.fa'
 						os.rename(src, dst)
-						os.remove(folder + '_contigmap.sam')
+						remove_if_exists(folder + '_contigmap.sam')
 os.chdir(phaseset)
 
 #Make fasta files for contigs which mapped to the same reference
@@ -373,7 +379,7 @@ for folder in os.listdir(phaseset):
 		subprocess.call(["cat *_annotated.fasta  > %s_allcontigs_allbaits.fasta" % (folder[:-9])], shell=True)
 		print("deinterleaving " + folder[:-9] +'_allcontigs_allbaits.fasta')
 		deinterleave_fasta(folder[:-9] +'_allcontigs_allbaits.fasta', folder[:-9]+'_allcontigs_allbaits_deinterleaved.fasta')
-		os.remove(folder[:-9] +'_allcontigs_allbaits.fasta')
+		remove_if_exists(folder[:-9] +'_allcontigs_allbaits.fasta')
 
 os.chdir(phaseset)
 
@@ -422,19 +428,19 @@ for folder in os.listdir(phaseset):
 				subprocess.call(["cat %s | bcftools consensus %s > %s1.fasta" % (dirpath+baits, dirpath+folder[:-8] + '1.vcf.gz', folder[:-8])], shell=True)
 				deinterleave_fasta(dirpath+folder[:-8] +'0.fasta', dirpath+folder[:-9]+'_0_Final.fasta')
 				deinterleave_fasta(dirpath+folder[:-8] +'1.fasta', dirpath+folder[:-9]+'_1_Final.fasta')
-				os.remove(folder[:-8] + '0.fasta')
-				os.remove(folder[:-8] + '1.fasta')
-				os.remove(folder[:-8] + 'mapreads.sam')
-				os.remove(folder[:-8] + '.0.bam')
-				os.remove(folder[:-8] + '0srt.bam')
-				os.remove(folder[:-8] + '0.vcf.gz')
-				os.remove(folder[:-8] + '0.vcf.gz.csi')
-				os.remove(folder[:-8] + '.1.bam')
-				os.remove(folder[:-8] + '1srt.bam')
-				os.remove(folder[:-8] + '1.vcf.gz')
-				os.remove(folder[:-8] + '1.vcf.gz.csi')
-				os.remove(folder[:-8] + '.chimera.bam')
-				os.remove(folder[:-8] + 'chimerasrt.bam')
+				remove_if_exists(folder[:-8] + '0.fasta')
+				remove_if_exists(folder[:-8] + '1.fasta')
+				remove_if_exists(folder[:-8] + 'mapreads.sam')
+				remove_if_exists(folder[:-8] + '.0.bam')
+				remove_if_exists(folder[:-8] + '0srt.bam')
+				remove_if_exists(folder[:-8] + '0.vcf.gz')
+				remove_if_exists(folder[:-8] + '0.vcf.gz.csi')
+				remove_if_exists(folder[:-8] + '.1.bam')
+				remove_if_exists(folder[:-8] + '1srt.bam')
+				remove_if_exists(folder[:-8] + '1.vcf.gz')
+				remove_if_exists(folder[:-8] + '1.vcf.gz.csi')
+				remove_if_exists(folder[:-8] + '.chimera.bam')
+				remove_if_exists(folder[:-8] + 'chimerasrt.bam')
 
 os.chdir(phaseset)
 
@@ -573,11 +579,11 @@ for folder in os.listdir(phaseset):
 			if file.endswith('allsamples_allcontigs.fasta'):
 				with open(file, 'r') as infile:
 					for line in infile:
-						if sample in line:
+						if sample in line and line.startswith('>L'):
 							print(line)
 							linspl=line.split('_')
 							print(linspl)
-							name = '>' + linspl[2] + '_' + linspl[3] + '_' + linspl[4] + '_' + linspl[5]
+							name = '>' + '_'.join(linspl[2:]).rstrip('\n') + '\n'
 							print(name)
 							replaceAll(file, line, name)
 
@@ -594,7 +600,7 @@ for file in os.listdir(phaseset+'diploidclusters_phased/'):
 				for folder in os.listdir(assemblydir):
 					if 'assembly' in folder:
 						sample=folder.split('_')[0] +'_' + folder.split('_')[1]
-						if sample in line:
+						if sample in line and line.startswith('>L'):
 							print(line)
 							linspl=line.split('_')
 							print(linspl)

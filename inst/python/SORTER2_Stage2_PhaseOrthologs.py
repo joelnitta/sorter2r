@@ -40,10 +40,17 @@ parser.add_argument("-pq", "--phasequal")
 parser.add_argument("-al", "--aliter")
 parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-idformat", "--idformat")
+# Optional: directory containing raw FASTQ files when Stage 1A was run
+# without Trim Galore (trim=F).  When omitted, reads are expected inside
+# each *_assembly/ subdirectory as *_R1_val_1.fq / *_R2_val_2.fq.
+parser.add_argument("-reads", "--readsdir", default=None)
 args = parser.parse_args()
 
 assemblydir = args.assemblydir if args.assemblydir.endswith('/') else args.assemblydir + '/'
 clusterdir = args.clusterdir if args.clusterdir.endswith('/') else args.clusterdir + '/'
+readsdir = None
+if args.readsdir is not None:
+    readsdir = args.readsdir if args.readsdir.endswith('/') else args.readsdir + '/'
 outdir = args.outputdir if args.outputdir.endswith('/') else args.outputdir + '/'
 os.makedirs(outdir, exist_ok=True)
 
@@ -77,6 +84,12 @@ for folder_name in folders_to_check:
 phasedir = outdir + 'diploids_phased/'
 direc = os.listdir(assemblydir)
 map_contigs_to_baits_dir = sorted(os.listdir(contigdir))
+
+def remove_if_exists(path):
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
 
 #Define function to change sequence IDs
 def replaceAll(file, searchExp, replaceExp):
@@ -209,13 +222,28 @@ for folder in direc:
 		for baits in os.listdir(wf_folder):
 			if baits.endswith('allcontigs_allclusterbaits_annotated.fasta'):
 				baits_path = wf_folder + baits
-				read = folder[:-8] + 'R1_val_1.fq'
-				R2 = folder[:-8] + 'R2_val_2.fq'
-				read_path = asm_folder + read
-				R2_path = asm_folder + R2
-				prefix = wf_folder + folder[:-8]
-				print(read)
-				print(R2)
+				sample_base = folder[:-8]  # e.g. 'Iimura18_cthysanostomum_'
+				# Prefer Trim Galore output inside the assembly dir;
+				# fall back to raw FASTQ files in readsdir when trim=F.
+				trimmed_R1 = asm_folder + sample_base + 'R1_val_1.fq'
+				trimmed_R2 = asm_folder + sample_base + 'R2_val_2.fq'
+				if os.path.exists(trimmed_R1):
+					read_path = trimmed_R1
+					R2_path = trimmed_R2
+				elif readsdir is not None:
+					raw_base = sample_base.rstrip('_')
+					read_path = readsdir + raw_base + '_R1.fastq'
+					R2_path = readsdir + raw_base + '_R2.fastq'
+					if not os.path.exists(read_path):
+						sys.exit('Error: reads not found for %s. '
+							'Checked %s and %s' % (folder, trimmed_R1, read_path))
+				else:
+					sys.exit('Error: reads not found: %s. '
+						'Pass -reads to specify a raw FASTQ directory '
+						'when Stage 1A was run without Trim Galore.' % trimmed_R1)
+				prefix = wf_folder + sample_base
+				print(read_path)
+				print(R2_path)
 				subprocess.call(["bwa index %s" % (baits_path)], shell=True)
 				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (
 					baits_path, read_path, R2_path, prefix)], shell=True)
@@ -249,17 +277,17 @@ for folder in direc:
 					baits_path, prefix + '0.vcf.gz', prefix)], shell=True)
 				subprocess.call(["cat %s | bcftools consensus %s > %s1_Final.fasta" % (
 					baits_path, prefix + '1.vcf.gz', prefix)], shell=True)
-				os.remove(prefix + 'mapreads.sam')
-				os.remove(prefix + '.0.bam')
-				os.remove(prefix + '0srt.bam')
-				os.remove(prefix + '0.vcf.gz')
-				os.remove(prefix + '0.vcf.gz.csi')
-				os.remove(prefix + '.1.bam')
-				os.remove(prefix + '1srt.bam')
-				os.remove(prefix + '1.vcf.gz')
-				os.remove(prefix + '1.vcf.gz.csi')
-				os.remove(prefix + '.chimera.bam')
-				os.remove(prefix + 'chimerasrt.bam')
+				remove_if_exists(prefix + 'mapreads.sam')
+				remove_if_exists(prefix + '.0.bam')
+				remove_if_exists(prefix + '0srt.bam')
+				remove_if_exists(prefix + '0.vcf.gz')
+				remove_if_exists(prefix + '0.vcf.gz.csi')
+				remove_if_exists(prefix + '.1.bam')
+				remove_if_exists(prefix + '1srt.bam')
+				remove_if_exists(prefix + '1.vcf.gz')
+				remove_if_exists(prefix + '1.vcf.gz.csi')
+				remove_if_exists(prefix + '.chimera.bam')
+				remove_if_exists(prefix + 'chimerasrt.bam')
 				#generate read statistics text file
 				bam = prefix + 'mapreads.bam'
 				stat_path = wf_folder + folder[:-8] + 'readstats.txt'
@@ -514,7 +542,7 @@ if 'full' in args.idformat:
 						name = linspl2[0] + '_' + linspl2[1] + '_' + linspl2[2] + '_' + linspl2[3] + '_' + linspl2[4]
 						print(name)
 						replaceAll(file, line, name)
-	sys.exit('Kept full sequence ID annotations; e.g. >L100_cl0_WA10_sampleid_0')
+	print('Kept full sequence ID annotations; e.g. >L100_cl0_WA10_sampleid_0')
 else:
 	if 'phase' in args.idformat:
 		for file in os.listdir(phasedir):
@@ -529,7 +557,7 @@ else:
 							name = '>' + linspl2[2] + '_' + linspl2[3] + '_' + linspl2[4]
 							print(name)
 							replaceAll(file, line, name)
-		sys.exit('Annotated alignments as: >@@##_sampleid_0/1 (annotated with phase)')
+		print('Annotated alignments as: >@@##_sampleid_0/1 (annotated with phase)')
 	else:
 		if 'onlysample' in args.idformat:
 			#Reformat as >@@##_sampleid ; simplest format for concatenation.
@@ -545,6 +573,6 @@ else:
 								name = '>' + linspl2[2] + '_' + linspl2[3] + '\n'
 								print(name)
 								replaceAll(file, line, name)
-			sys.exit('Annotated alignments as: >@@##_sampleid (no phase annotations)')
+			print('Annotated alignments as: >@@##_sampleid (no phase annotations)')
 		else:
 			sys.exit("-idformat flag not set or did not correspond to 'full', 'copies', or 'onlysample' keeping default trimal headers; e.g. >L100_cl0_WA10_sampleid_0 1230 bp ")
