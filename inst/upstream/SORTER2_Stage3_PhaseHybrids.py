@@ -19,9 +19,28 @@ import itertools
 import argparse
 import glob
 
+
+def run_usearch(cmd):
+    cwd = os.getcwd()
+    if shutil.which('usearch'):
+        subprocess.call('usearch ' + cmd, shell=True)
+    elif shutil.which('docker'):
+        docker_cmd = (
+            'docker run --rm -v %s:%s -w %s '
+            'joelnitta/usearch:latest %s' % (cwd, cwd, cwd, cmd)
+        )
+        subprocess.call(docker_cmd, shell=True)
+    else:
+        sys.exit(
+            'Error: usearch not found. Install usearch locally or install '
+            'Docker and build the joelnitta/usearch image.'
+        )
+
+
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-wd", "--workingdir")
+parser.add_argument("-wp", "--phaseddir")
+parser.add_argument("-wa", "--assemblydir")
 parser.add_argument("-outdir", "--outputdir")
 parser.add_argument("-loci", "--locinum")
 parser.add_argument("-csn", "--contigscafnum")
@@ -33,14 +52,18 @@ parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-fp", "--filterundiff")
 
 args = parser.parse_args()
-outdir = args.outputdir if args.outputdir else args.workingdir
+# phaseddir: Stage 2 output dir — contains diploids_phased/
+phaseddir = args.phaseddir if args.phaseddir.endswith('/') else args.phaseddir + '/'
+# assemblydir: Stage 1A output dir — contains *_assembly/ dirs for diploid samples
+assemblydir = args.assemblydir if args.assemblydir.endswith('/') else args.assemblydir + '/'
+outdir = args.outputdir if args.outputdir else phaseddir
 outdir = outdir if outdir.endswith('/') else outdir + '/'
 os.makedirs(outdir, exist_ok=True)
 phaseset=outdir + 'phaseset/'
 baitid1= ["L%d_" % x for x in range(int(args.locinum))]
 baitid= ["L%d" % x for x in range(int(args.locinum))]
-diploidclusters=args.workingdir + 'diploids_phased/'
-diploid_db = args.workingdir + 'diploids_phased/diploid_master.udb'
+diploidclusters=phaseddir + 'diploids_phased/'
+diploid_db = phaseddir + 'diploids_phased/diploid_master.udb'
 
 
 # #Define command to change sequence IDs
@@ -166,7 +189,7 @@ for folder in os.listdir(phaseset):
 os.chdir(diploidclusters)
 
 #make ublast data
-subprocess.call("usearch -makeudb_usearch ALLsamples_allcontigs_allbaitclusters_contigs_phased.fasta -output diploid_master.udb", shell=True)
+run_usearch("-makeudb_usearch ALLsamples_allcontigs_allbaitclusters_contigs_phased.fasta -output diploid_master.udb")
 
 #Map Contigs to Rereferences
 os.chdir(phaseset)
@@ -270,7 +293,7 @@ for folder in os.listdir(phaseset):
 		subprocess.call(["pwd"], shell=True)
 		for file in readir:
 			if file.endswith("longestfiltered.fa"):
-				subprocess.call(["usearch -cluster_fast %s -id 0.99 -consout %s_cons.fa" % (file, file[:-3])], shell=True)
+				run_usearch("-cluster_fast %s -id 0.99 -centroids %s_cons.fa" % (file, file[:-3]))
 
 
 os.chdir(phaseset)
@@ -433,7 +456,7 @@ for folder in os.listdir(phaseset):
 					statfile.close()
 
 
-os.chdir(args.workingdir)
+os.chdir(phaseddir)
 #Make a copy of diploid locus-clusters for each sample in phase set
 dpdst= phaseset + 'diploidclusters_phased/'
 shutil.copytree(diploidclusters, dpdst)
@@ -464,7 +487,7 @@ for folder in os.listdir(phaseset):
 			if file.endswith('_Final.fasta'):
 				os.chdir(phaseset+folder)
 				subprocess.call(["awk 'BEGIN{FS=\" \"}{if(!/>/){print toupper($0)}else{print $1}}' %s > %s_cap.fasta" % (file, file[:-6])], shell=True)
-				subprocess.call(["usearch -usearch_global %s -db %s -id 0.9 -top_hit_only -blast6out %s_hits.txt -strand plus" % (file[:-6]+'_cap.fasta', diploid_db, file[:-12])], shell=True)
+				run_usearch("-usearch_global %s -db %s -id 0.9 -top_hit_only -blast6out %s_hits.txt -strand plus" % (file[:-6]+'_cap.fasta', diploid_db, file[:-12]))
 
 
 #Compile Polyploid into Diploid locus-cluster dataset, respectively
@@ -568,7 +591,7 @@ for file in os.listdir(phaseset+'diploidclusters_phased/'):
 		os.chdir(phaseset+'diploidclusters_phased/')
 		with open(file, 'r') as infile:
 			for line in infile:
-				for folder in os.listdir(args.workingdir):
+				for folder in os.listdir(assemblydir):
 					if 'assembly' in folder:
 						sample=folder.split('_')[0] +'_' + folder.split('_')[1]
 						if sample in line:
