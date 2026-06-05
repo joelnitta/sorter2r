@@ -48,6 +48,7 @@ sorter2_format_reads <- function(
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param overwrite If `TRUE`, delete `output_dir` before running.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
 #' @return Path to `output_dir` (for use with `tar_file()`).
@@ -61,11 +62,13 @@ sorter2_stage1a <- function(
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
+  overwrite = FALSE,
   dry_run = FALSE,
   echo = TRUE
 ) {
   reads_dir <- sorter2_require_dir(reads_dir, "reads_dir")
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
+  if (!dry_run) sorter2_check_overwrite(output_dir, overwrite)
 
   args <- c(
     "-o",
@@ -109,6 +112,7 @@ sorter2_stage1a <- function(
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param overwrite If `TRUE`, delete `output_dir` before running.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
 #' @return Path to `output_dir` (for use with `tar_file()`).
@@ -129,12 +133,14 @@ sorter2_stage1b <- function(
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
+  overwrite = FALSE,
   dry_run = FALSE,
   echo = TRUE
 ) {
   input_dir <- sorter2_with_trailing_slash(input_dir)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
   ref <- sorter2_require_file(ref, "ref")
+  if (!dry_run) sorter2_check_overwrite(output_dir, overwrite)
 
   args <- c(
     "-wd",
@@ -189,6 +195,7 @@ sorter2_stage1b <- function(
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param overwrite If `TRUE`, delete `output_dir` before running.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
 #' @return Path to `output_dir` (for use with `tar_file()`).
@@ -205,12 +212,14 @@ sorter2_stage2 <- function(
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
+  overwrite = FALSE,
   dry_run = FALSE,
   echo = TRUE
 ) {
   input_assemblies <- sorter2_with_trailing_slash(input_assemblies)
   input_clusters <- sorter2_with_trailing_slash(input_clusters)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
+  if (!dry_run) sorter2_check_overwrite(output_dir, overwrite)
 
   args <- c(
     "-wa",

@@ -109,6 +109,23 @@ sorter2_format_ref <- function(input, output = NULL) {
   normalizePath(output, winslash = "/", mustWork = TRUE)
 }
 
+sorter2_check_overwrite <- function(path, overwrite) {
+  if (!dir.exists(path)) return(invisible(NULL))
+  if (overwrite) {
+    message("Removing existing output: ", path)
+    unlink(path, recursive = TRUE)
+  } else {
+    stop(
+      sprintf(
+        "Output already exists: %s\nSet overwrite = TRUE to remove it and re-run.",
+        path
+      ),
+      call. = FALSE
+    )
+  }
+}
+
+
 #' Run a SORTER2 Python script
 #'
 #' @param script Python script filename relative to the script directory.
