@@ -15,8 +15,10 @@ constructs CLI calls, and executes the original Python entry points.
 
 ## Typical workflow
 
-Each function takes an explicit `reads_dir`/`input_dir` and `output_dir`,
-forming a linear pipeline where each step's output feeds the next.
+Each function takes explicit input and output directory arguments, forming
+a linear pipeline where each step's output feeds the next. Stage 2 takes
+two inputs (Stage 1A and Stage 1B outputs); Stage 3 also takes two inputs
+(Stage 2 and Stage 1A outputs).
 
 ```r
 library(sorter2r)
@@ -56,14 +58,17 @@ sorter2_stage2(
 )
 
 # Stage 3 — phase hybrid loci
-# Note: results/stage2/ must also contain a phaseset/ subdirectory
-# with per-sample assembly dirs (see SORTER2 documentation)
+# input_phased:    Stage 2 output (contains diploids_phased/)
+# input_assemblies: Stage 1A output (diploid sample names)
+# Note: output_dir must contain a phaseset/ subdirectory with
+# per-sample hybrid assembly dirs (see SORTER2 documentation)
 sorter2_stage3(
-  input_dir  = "results/stage2/",
-  output_dir = "results/stage3/",
-  ref        = "reference/baits.fasta",
-  loci       = 100,
-  conda_env  = "SORTER2"
+  input_phased     = "results/stage2/",
+  input_assemblies = "results/stage1a/",
+  output_dir       = "results/stage3/",
+  ref              = "reference/baits.fasta",
+  loci             = 100,
+  conda_env        = "SORTER2"
 )
 
 # Processor — filter and summarise final outputs

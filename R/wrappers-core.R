@@ -253,12 +253,13 @@ sorter2_stage2 <- function(
 
 #' Run the SORTER2 Stage3 step
 #'
-#' @param input_dir Directory containing the Stage2 output (`diploids_phased/`
-#'   and `diploidclusters/`). Also expected to contain a `phaseset/`
-#'   subdirectory with per-sample assembly dirs (user-created).
-#' @param output_dir Directory where Stage3 results will be written. Currently
-#'   must equal `input_dir`; full separation will be supported in a future
-#'   update.
+#' @param input_phased Directory containing the Stage2 output. Must contain a
+#'   `diploids_phased/` subdirectory with the phased diploid sequences.
+#' @param input_assemblies Directory containing the Stage1A output. Used to
+#'   identify diploid sample names from `*_assembly/` subdirectories.
+#' @param output_dir Directory where Stage3 results will be written. The
+#'   `phaseset/` subdirectory with per-sample hybrid assembly dirs must already
+#'   exist here before running. Defaults to `input_phased`.
 #' @param ref Reference file path.
 #' @param loci Number of loci to process.
 #' @param contigscafnum Contig/scaffold count threshold.
@@ -276,8 +277,9 @@ sorter2_stage2 <- function(
 #' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage3 <- function(
-  input_dir,
-  output_dir = input_dir,
+  input_phased,
+  input_assemblies,
+  output_dir = input_phased,
   ref,
   loci,
   contigscafnum = 20,
@@ -293,13 +295,16 @@ sorter2_stage3 <- function(
   dry_run = FALSE,
   echo = TRUE
 ) {
-  input_dir <- sorter2_with_trailing_slash(input_dir)
+  input_phased <- sorter2_with_trailing_slash(input_phased)
+  input_assemblies <- sorter2_with_trailing_slash(input_assemblies)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
   ref <- sorter2_require_file(ref, "ref")
 
   args <- c(
-    "-wd",
-    input_dir,
+    "-wp",
+    input_phased,
+    "-wa",
+    input_assemblies,
     "-outdir",
     output_dir,
     "-ref",
