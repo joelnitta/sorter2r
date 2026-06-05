@@ -2,5 +2,5 @@
 .RData
 .Rproj.user
 .Rproj
-inst/dev-data/
+inst/dev-data*/
 working.R

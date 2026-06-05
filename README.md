@@ -64,14 +64,15 @@ sorter2_stage2(
 )
 
 # Stage 3 — phase hybrid loci
-# input_phased:    Stage 2 output (contains diploids_phased/)
-# input_assemblies: Stage 1A output (diploid sample names)
-# Note: output_dir must contain a phaseset/ subdirectory with
-# per-sample hybrid assembly dirs (see SORTER2 documentation)
+# phaseset_dir: where to find hybrid *_assembly/ dirs (usually Stage 1A output).
+#   The wrapper copies them into output_dir/phaseset/ automatically.
+# hybrid_samples: names of hybrid samples to copy; omit to copy all *_assembly/.
 sorter2_stage3(
   input_phased     = "results/stage2/",
   input_assemblies = "results/stage1a/",
   output_dir       = "results/stage3/",
+  phaseset_dir     = "results/stage1a/",
+  hybrid_samples   = c("Sample1_species", "Sample2_species"),
   ref              = "reference/baits.fasta",
   loci             = 100,
   conda_env        = "SORTER2"
