@@ -29,7 +29,9 @@ sorter2_format_reads(
   reads_dir = "raw_reads/"
 )
 
-# Stage 1A — trim (optional) and/or assemble contigs with SPAdes
+# Stage 1A — trim (optional) and/or assemble contigs with SPAdes.
+# Set trim = FALSE if reads are already cleaned; pass reads_dir to
+# sorter2_stage2() in that case so Stage 2 can locate the FASTQ files.
 sorter2_stage1a(
   reads_dir  = "raw_reads/",
   output_dir = "results/stage1a/",
@@ -48,12 +50,16 @@ sorter2_stage1b(
 )
 
 # Stage 2 — phase bi-allelic haplotypes
-# needs assembly dirs (Stage 1A) for FASTQ files and
-# diploidclusters (Stage 1B) for ortholog clusters
+# input_assemblies: Stage 1A output (*_assembly/ dirs)
+# input_clusters:   Stage 1B output (diploidclusters/ and diploids/)
+# reads_dir:        directory with raw FASTQ files (*_R1.fastq / *_R2.fastq).
+#   Required when Stage 1A was run with trim = FALSE (pre-cleaned reads).
+#   Omit when trim = TRUE — reads are already inside the *_assembly/ dirs.
 sorter2_stage2(
   input_assemblies = "results/stage1a/",
   input_clusters   = "results/stage1b/",
   output_dir       = "results/stage2/",
+  reads_dir        = "raw_reads/",
   conda_env        = "SORTER2"
 )
 
