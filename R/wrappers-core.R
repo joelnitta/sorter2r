@@ -183,10 +183,14 @@ sorter2_stage1b <- function(
 #' Run the SORTER2 Stage2 step
 #'
 #' @param input_assemblies Directory containing the Stage1A output
-#'   (`*_assembly/` subdirs with trimmed FASTQ files).
+#'   (`*_assembly/` subdirs with SPAdes contigs).
 #' @param input_clusters Directory containing the Stage1B output
 #'   (`diploidclusters/` and `diploids/` subdirs).
 #' @param output_dir Directory where `diploids_phased/` will be created.
+#' @param reads_dir Optional directory containing raw FASTQ files
+#'   (`*_R1.fastq` / `*_R2.fastq`). Required when Stage 1A was run with
+#'   `trim = FALSE`. When `NULL` (the default), Stage2 expects Trim Galore
+#'   output (`*_R1_val_1.fq`) inside each `*_assembly/` subdirectory.
 #' @param phasequal Phase quality threshold.
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
@@ -204,6 +208,7 @@ sorter2_stage2 <- function(
   input_assemblies,
   input_clusters,
   output_dir,
+  reads_dir = NULL,
   phasequal = 20,
   aliter = 1000,
   indelrep = 0.1,
@@ -238,6 +243,11 @@ sorter2_stage2 <- function(
     as.character(idformat)
   )
 
+  if (!is.null(reads_dir)) {
+    reads_dir <- sorter2_with_trailing_slash(reads_dir)
+    args <- c(args, "-reads", reads_dir)
+  }
+
   sorter2_run(
     script = "SORTER2_Stage2_PhaseOrthologs.py",
     args = args,
@@ -257,9 +267,15 @@ sorter2_stage2 <- function(
 #'   `diploids_phased/` subdirectory with the phased diploid sequences.
 #' @param input_assemblies Directory containing the Stage1A output. Used to
 #'   identify diploid sample names from `*_assembly/` subdirectories.
-#' @param output_dir Directory where Stage3 results will be written. The
-#'   `phaseset/` subdirectory with per-sample hybrid assembly dirs must already
-#'   exist here before running. Defaults to `input_phased`.
+#' @param output_dir Directory where Stage3 results will be written.
+#' @param phaseset_dir Optional directory containing hybrid sample
+#'   `*_assembly/` subdirectories (SPAdes output). When provided, the wrapper
+#'   copies those dirs into `output_dir/phaseset/` before running. When `NULL`
+#'   (the default), `output_dir/phaseset/` must already exist and be populated
+#'   by the user before calling this function.
+#' @param hybrid_samples Optional character vector of sample base names (e.g.
+#'   `"Iimura46_cgrande"`) used to filter which `*_assembly/` dirs are copied
+#'   from `phaseset_dir`. When `NULL`, all `*_assembly/` dirs are copied.
 #' @param ref Reference file path.
 #' @param loci Number of loci to process.
 #' @param contigscafnum Contig/scaffold count threshold.
@@ -272,6 +288,9 @@ sorter2_stage2 <- function(
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param overwrite If `TRUE`, remove Stage3 outputs (but preserve
+#'   `phaseset/`) before re-running. When `phaseset_dir` is also set,
+#'   `phaseset/` is fully refreshed from the source.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
 #' @return Path to `output_dir` (for use with `tar_file()`).
@@ -279,7 +298,9 @@ sorter2_stage2 <- function(
 sorter2_stage3 <- function(
   input_phased,
   input_assemblies,
-  output_dir = input_phased,
+  output_dir,
+  phaseset_dir = NULL,
+  hybrid_samples = NULL,
   ref,
   loci,
   contigscafnum = 20,
@@ -292,6 +313,7 @@ sorter2_stage3 <- function(
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
+  overwrite = FALSE,
   dry_run = FALSE,
   echo = TRUE
 ) {
@@ -299,6 +321,61 @@ sorter2_stage3 <- function(
   input_assemblies <- sorter2_with_trailing_slash(input_assemblies)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
   ref <- sorter2_require_file(ref, "ref")
+
+  phaseset_path <- file.path(output_dir, "phaseset")
+
+  if (!dry_run) {
+    if (dir.exists(output_dir) && overwrite) {
+      # Remove Stage3 outputs but keep phaseset/ unless phaseset_dir refreshes it
+      entries <- list.files(output_dir, full.names = TRUE)
+      keep <- if (is.null(phaseset_dir)) phaseset_path else character(0)
+      for (e in entries[entries != keep]) unlink(e, recursive = TRUE)
+    } else if (dir.exists(output_dir) && !overwrite) {
+      stop(
+        sprintf(
+          "Output already exists: %s\nSet overwrite = TRUE to re-run.",
+          output_dir
+        ),
+        call. = FALSE
+      )
+    }
+
+    if (!is.null(phaseset_dir)) {
+      phaseset_dir <- sorter2_with_trailing_slash(phaseset_dir)
+      dir.create(phaseset_path, recursive = TRUE, showWarnings = FALSE)
+      asm_dirs <- list.dirs(phaseset_dir, recursive = FALSE, full.names = TRUE)
+      asm_dirs <- asm_dirs[grepl("_assembly$", basename(asm_dirs))]
+      if (!is.null(hybrid_samples)) {
+        asm_dirs <- asm_dirs[
+          sub("_assembly$", "", basename(asm_dirs)) %in% hybrid_samples
+        ]
+      }
+      if (length(asm_dirs) == 0L) {
+        stop(
+          "No *_assembly/ directories found in phaseset_dir: ", phaseset_dir,
+          call. = FALSE
+        )
+      }
+      for (src in asm_dirs) {
+        dst <- file.path(phaseset_path, basename(src))
+        if (dir.exists(dst)) unlink(dst, recursive = TRUE)
+        file.copy(src, phaseset_path, recursive = TRUE)
+      }
+      message(
+        "Populated phaseset/ with ", length(asm_dirs),
+        " assembly dir(s) from ", phaseset_dir
+      )
+    }
+
+    if (!dir.exists(phaseset_path)) {
+      stop(
+        "output_dir/phaseset/ does not exist: ", phaseset_path,
+        "\nEither set phaseset_dir to auto-populate it, or create it manually ",
+        "with hybrid sample *_assembly/ subdirectories.",
+        call. = FALSE
+      )
+    }
+  }
 
   args <- c(
     "-wp",
