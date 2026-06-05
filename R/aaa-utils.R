@@ -210,13 +210,20 @@ sorter2_run <- function(
 
   while (TRUE) {
     ready <- p$poll_io(timeout = 200L)
-    if (ready[["output"]] == "ready") {
-      for (l in p$read_output_lines()) message(l)
-    }
-    if (ready[["error"]] == "ready") {
-      for (l in p$read_error_lines()) message(l)
-    }
+    out_lines <- if (ready[["output"]] == "ready") p$read_output_lines()
+      else character(0)
+    err_lines <- if (ready[["error"]] == "ready") p$read_error_lines()
+      else character(0)
+    for (l in out_lines) message(l)
+    for (l in err_lines) message(l)
     if (ready[["output"]] == "closed" && ready[["error"]] == "closed") break
+    # conda run sometimes holds pipes open after the child exits; break once
+    # the process is dead and a full poll cycle yields no new output.
+    if (!p$is_alive() && length(out_lines) == 0L && length(err_lines) == 0L) {
+      for (l in p$read_output_lines()) message(l)
+      for (l in p$read_error_lines()) message(l)
+      break
+    }
   }
 
   p$wait()
