@@ -5,8 +5,11 @@
 \title{Run the SORTER2 Stage3 step}
 \usage{
 sorter2_stage3(
-  input_dir,
-  output_dir = input_dir,
+  input_phased,
+  input_assemblies,
+  output_dir,
+  phaseset_dir = NULL,
+  hybrid_samples = NULL,
   ref,
   loci,
   contigscafnum = 20,
@@ -19,18 +22,29 @@ sorter2_stage3(
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
+  overwrite = FALSE,
   dry_run = FALSE,
   echo = TRUE
 )
 }
 \arguments{
-\item{input_dir}{Directory containing the Stage2 output (\verb{diploids_phased/}
-and \verb{diploidclusters/}). Also expected to contain a \verb{phaseset/}
-subdirectory with per-sample assembly dirs (user-created).}
+\item{input_phased}{Directory containing the Stage2 output. Must contain a
+\verb{diploids_phased/} subdirectory with the phased diploid sequences.}
 
-\item{output_dir}{Directory where Stage3 results will be written. Currently
-must equal \code{input_dir}; full separation will be supported in a future
-update.}
+\item{input_assemblies}{Directory containing the Stage1A output. Used to
+identify diploid sample names from \verb{*_assembly/} subdirectories.}
+
+\item{output_dir}{Directory where Stage3 results will be written.}
+
+\item{phaseset_dir}{Optional directory containing hybrid sample
+\verb{*_assembly/} subdirectories (SPAdes output). When provided, the wrapper
+copies those dirs into \verb{output_dir/phaseset/} before running. When \code{NULL}
+(the default), \verb{output_dir/phaseset/} must already exist and be populated
+by the user before calling this function.}
+
+\item{hybrid_samples}{Optional character vector of sample base names (e.g.
+\code{"Iimura46_cgrande"}) used to filter which \verb{*_assembly/} dirs are copied
+from \code{phaseset_dir}. When \code{NULL}, all \verb{*_assembly/} dirs are copied.}
 
 \item{ref}{Reference file path.}
 
@@ -56,12 +70,16 @@ update.}
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
 
+\item{overwrite}{If \code{TRUE}, remove Stage3 outputs (but preserve
+\verb{phaseset/}) before re-running. When \code{phaseset_dir} is also set,
+\verb{phaseset/} is fully refreshed from the source.}
+
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
 
 \item{echo}{If \code{TRUE}, print the command before running it.}
 }
 \value{
-A list describing the command execution.
+Path to \code{output_dir} (for use with \code{tar_file()}).
 }
 \description{
 Run the SORTER2 Stage3 step

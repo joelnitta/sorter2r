@@ -55,7 +55,7 @@ future update.}
 \item{echo}{If \code{TRUE}, print the command before running it.}
 }
 \value{
-A list describing the command execution.
+Path to \code{output_dir} (for use with \code{tar_file()}).
 }
 \description{
 Run the SORTER2 Processor step

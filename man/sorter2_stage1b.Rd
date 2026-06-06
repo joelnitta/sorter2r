@@ -20,6 +20,7 @@ sorter2_stage1b(
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
+  overwrite = FALSE,
   dry_run = FALSE,
   echo = TRUE
 )
@@ -57,12 +58,14 @@ be created.}
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
 
+\item{overwrite}{If \code{TRUE}, delete \code{output_dir} before running.}
+
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
 
 \item{echo}{If \code{TRUE}, print the command before running it.}
 }
 \value{
-A list describing the command execution.
+Path to \code{output_dir} (for use with \code{tar_file()}).
 }
 \description{
 Run the SORTER2 Stage1B step

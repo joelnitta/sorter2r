@@ -8,6 +8,7 @@ sorter2_stage2(
   input_assemblies,
   input_clusters,
   output_dir,
+  reads_dir = NULL,
   phasequal = 20,
   aliter = 1000,
   indelrep = 0.1,
@@ -16,18 +17,24 @@ sorter2_stage2(
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
+  overwrite = FALSE,
   dry_run = FALSE,
   echo = TRUE
 )
 }
 \arguments{
 \item{input_assemblies}{Directory containing the Stage1A output
-(\verb{*_assembly/} subdirs with trimmed FASTQ files).}
+(\verb{*_assembly/} subdirs with SPAdes contigs).}
 
 \item{input_clusters}{Directory containing the Stage1B output
 (\verb{diploidclusters/} and \verb{diploids/} subdirs).}
 
 \item{output_dir}{Directory where \verb{diploids_phased/} will be created.}
+
+\item{reads_dir}{Optional directory containing raw FASTQ files
+(\verb{*_R1.fastq} / \verb{*_R2.fastq}). Required when Stage 1A was run with
+\code{trim = FALSE}. When \code{NULL} (the default), Stage2 expects Trim Galore
+output (\verb{*_R1_val_1.fq}) inside each \verb{*_assembly/} subdirectory.}
 
 \item{phasequal}{Phase quality threshold.}
 
@@ -45,12 +52,14 @@ sorter2_stage2(
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
 
+\item{overwrite}{If \code{TRUE}, delete \code{output_dir} before running.}
+
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
 
 \item{echo}{If \code{TRUE}, print the command before running it.}
 }
 \value{
-A list describing the command execution.
+Path to \code{output_dir} (for use with \code{tar_file()}).
 }
 \description{
 Run the SORTER2 Stage2 step

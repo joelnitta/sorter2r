@@ -41,7 +41,7 @@ with \verb{conda run -n conda_env}.}
 Defaults to \code{0L}. Use \code{c(0L, 1L)} for scripts that exit with 1 on success.}
 }
 \value{
-A list describing the command execution.
+\code{invisible(NULL)}. Stops with an error on non-zero exit.
 }
 \description{
 Run a SORTER2 Python script

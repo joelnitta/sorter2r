@@ -33,7 +33,7 @@ sorter2_format_reads(
 \item{echo}{If \code{TRUE}, print the command before running it.}
 }
 \value{
-A list describing the command execution.
+Path to \code{reads_dir} (for use with \code{tar_file()}).
 }
 \description{
 Run the SORTER2 FormatReads step
