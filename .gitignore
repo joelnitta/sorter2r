@@ -4,3 +4,4 @@
 .Rproj
 inst/dev-data*/
 working.R
+_targets*

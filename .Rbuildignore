@@ -2,3 +2,6 @@
 ^PROJECT_HANDOFF_PLAN\.md$
 ^inst/dev-data$
 ^inst/dev-data/.*$
+^inst/dev-data-mini$
+^inst/dev-data-mini/.*$
+^_targets$
