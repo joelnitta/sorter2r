@@ -24,7 +24,7 @@ sorter2_format_reads <- function(
   reads_dir <- sorter2_require_dir(reads_dir, "reads_dir")
 
   args <- c("-i", basename(input))
-  sorter2_run(
+  res <- sorter2_run(
     script = "SORTER2_FormatReads.py",
     args = args,
     python = python,
@@ -35,6 +35,7 @@ sorter2_format_reads <- function(
     dry_run = dry_run,
     echo = echo
   )
+  if (dry_run) return(invisible(res))
   reads_dir
 }
 
@@ -85,7 +86,7 @@ sorter2_stage1a <- function(
     sorter2_bool_flag(trim)
   )
 
-  sorter2_run(
+  res <- sorter2_run(
     script = "SORTER2_Stage1A_TrimSPAdes.py",
     args = args,
     python = python,
@@ -96,6 +97,7 @@ sorter2_stage1a <- function(
     dry_run = dry_run,
     echo = echo
   )
+  if (dry_run) return(invisible(res))
   output_dir
 }
 
@@ -173,7 +175,7 @@ sorter2_stage1b <- function(
     as.character(idformat)
   )
 
-  sorter2_run(
+  res <- sorter2_run(
     script = "SORTER2_Stage1B_AssembleOrthologs.py",
     args = args,
     python = python,
@@ -183,6 +185,7 @@ sorter2_stage1b <- function(
     dry_run = dry_run,
     echo = echo
   )
+  if (dry_run) return(invisible(res))
   output_dir
 }
 
@@ -254,7 +257,7 @@ sorter2_stage2 <- function(
     args <- c(args, "-reads", reads_dir)
   }
 
-  sorter2_run(
+  res <- sorter2_run(
     script = "SORTER2_Stage2_PhaseOrthologs.py",
     args = args,
     python = python,
@@ -264,6 +267,7 @@ sorter2_stage2 <- function(
     dry_run = dry_run,
     echo = echo
   )
+  if (dry_run) return(invisible(res))
   output_dir
 }
 
@@ -408,7 +412,7 @@ sorter2_stage3 <- function(
     sorter2_bool_flag(filterundiff)
   )
 
-  sorter2_run(
+  res <- sorter2_run(
     script = "SORTER2_Stage3_PhaseHybrids.py",
     args = args,
     python = python,
@@ -418,6 +422,7 @@ sorter2_stage3 <- function(
     dry_run = dry_run,
     echo = echo
   )
+  if (dry_run) return(invisible(res))
   output_dir
 }
 
@@ -481,7 +486,7 @@ sorter2_processor <- function(
     sorter2_bool_flag(dovcf)
   )
 
-  sorter2_run(
+  res <- sorter2_run(
     script = "SORTER2_Processor.py",
     args = args,
     python = python,
@@ -491,5 +496,6 @@ sorter2_processor <- function(
     dry_run = dry_run,
     echo = echo
   )
+  if (dry_run) return(invisible(res))
   output_dir
 }

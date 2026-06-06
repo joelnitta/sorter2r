@@ -197,7 +197,12 @@ sorter2_run <- function(
   }
 
   if (dry_run) {
-    return(invisible(NULL))
+    return(invisible(list(
+      success = TRUE,
+      status  = 0L,
+      dry_run = TRUE,
+      command = command_string
+    )))
   }
 
   p <- processx::process$new(

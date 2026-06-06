@@ -178,13 +178,14 @@ test_that("wrapper dry-runs build expected command arguments", {
   expect_match(stage2_res$command, "'-pq' '20'")
 
   stage3_res <- sorter2_stage3(
-    input_dir = input_dir,
-    output_dir = output_dir,
-    ref = ref_file,
-    loci = 10,
-    script_dir = script_dir,
-    dry_run = TRUE,
-    echo = FALSE
+    input_phased     = input_dir,
+    input_assemblies = input_dir,
+    output_dir       = output_dir,
+    ref              = ref_file,
+    loci             = 10,
+    script_dir       = script_dir,
+    dry_run          = TRUE,
+    echo             = FALSE
   )
   expect_match(stage3_res$command, "SORTER2_Stage3_PhaseHybrids.py")
   expect_match(stage3_res$command, "'-outdir'")

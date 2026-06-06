@@ -5,3 +5,5 @@
 ^inst/dev-data-mini$
 ^inst/dev-data-mini/.*$
 ^_targets$
+^_targets\.R$
+^working\.R$

@@ -34,6 +34,7 @@
 #'       diploids typically show 1–2; values above 2 suggest polyploidy.}
 #'     \item{candidate}{`TRUE` if `mean_per_locus >= min_mean`.}
 #'   }
+#' @importFrom utils read.csv
 #' @export
 sorter2_infer_hybrids <- function(input_dir, min_mean = 2.0) {
   diploids_dir <- file.path(input_dir, "diploids")
