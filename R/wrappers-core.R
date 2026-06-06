@@ -68,6 +68,12 @@ sorter2_stage1a <- function(
 ) {
   reads_dir <- sorter2_require_dir(reads_dir, "reads_dir")
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
+  # normalizePath may return a relative path for non-existent dirs on some
+  # Linux platforms; the Python script runs with working_dir = reads_dir, so
+  # a relative output_dir would be resolved inside the reads directory.
+  if (!startsWith(output_dir, "/")) {
+    output_dir <- file.path(getwd(), output_dir)
+  }
   if (!dry_run) sorter2_check_overwrite(output_dir, overwrite)
 
   args <- c(
