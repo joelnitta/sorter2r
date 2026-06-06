@@ -154,6 +154,9 @@ sorter2_stage1b <- function(
 ) {
   input_dir <- sorter2_with_trailing_slash(input_dir)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
+  if (!startsWith(output_dir, "/")) {
+    output_dir <- file.path(getwd(), output_dir)
+  }
   ref <- sorter2_require_file(ref, "ref")
   if (!dry_run) sorter2_check_overwrite(output_dir, overwrite)
 
@@ -240,6 +243,9 @@ sorter2_stage2 <- function(
   input_assemblies <- sorter2_with_trailing_slash(input_assemblies)
   input_clusters <- sorter2_with_trailing_slash(input_clusters)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
+  if (!startsWith(output_dir, "/")) {
+    output_dir <- file.path(getwd(), output_dir)
+  }
   if (!dry_run) sorter2_check_overwrite(output_dir, overwrite)
 
   args <- c(
@@ -337,6 +343,9 @@ sorter2_stage3 <- function(
   input_phased <- sorter2_with_trailing_slash(input_phased)
   input_assemblies <- sorter2_with_trailing_slash(input_assemblies)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
+  if (!startsWith(output_dir, "/")) {
+    output_dir <- file.path(getwd(), output_dir)
+  }
   ref <- sorter2_require_file(ref, "ref")
 
   phaseset_path <- file.path(output_dir, "phaseset")
