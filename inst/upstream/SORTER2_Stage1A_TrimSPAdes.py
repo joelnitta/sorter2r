@@ -1,5 +1,7 @@
 import os
+import re
 import sys
+import shutil
 import argparse
 import subprocess
 
@@ -7,7 +9,18 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--outdir", required=True, help='Output directory for assembled results')
 parser.add_argument("-spades", "--spades", required=True, help='Run Spades Assembly? (T/F)')
 parser.add_argument("-trim", "--trim", required=True, help='Run Trim Galore? (T/F)')
+parser.add_argument("-clean_tmp", "--clean_tmp", default='F',
+                    help='Delete SPAdes K-mer graph dirs after each sample? (T/F)')
 args = parser.parse_args()
+
+
+def _clean_kmer_dirs(spades_out):
+    """Remove K[0-9]+ subdirectories from a SPAdes output directory."""
+    if not os.path.isdir(spades_out):
+        return
+    for item in os.listdir(spades_out):
+        if re.match(r'^K\d+$', item):
+            shutil.rmtree(os.path.join(spades_out, item), ignore_errors=True)
 
 
 #working directory iterator
@@ -54,6 +67,8 @@ if args.spades == 'T':
 					if 'R1_val_1.fq' in read:
 						R2 = read[:-11] + 'R2_val_2.fq'
 						subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (read, R2)], shell=True)
+						if args.clean_tmp == 'T':
+							_clean_kmer_dirs('spades_hybrid_assembly')
 						os.chdir(dst)
 					else:
 						continue
@@ -70,6 +85,8 @@ if args.spades == 'T':
 				R2 = os.path.join(rootwd, file.replace('_R1.','_R2.'))
 				os.chdir(readst)
 				subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (R1, R2)], shell=True)
+				if args.clean_tmp == 'T':
+					_clean_kmer_dirs('spades_hybrid_assembly')
 				os.chdir(rootwd)
 			else:
 				continue

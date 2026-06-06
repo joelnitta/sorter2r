@@ -45,6 +45,10 @@ sorter2_format_reads <- function(
 #' @param output_dir Directory where the assembled output will be created.
 #' @param spades Logical flag for SPAdes assembly.
 #' @param trim Logical flag for TrimGalore trimming.
+#' @param clean_spades_tmp If `TRUE`, delete SPAdes intermediate K-mer graph
+#'   directories (`K21/`, `K33/`, etc.) after each sample assembles. Saves
+#'   substantial disk space at the cost of preventing SPAdes restarts.
+#'   Default `FALSE`.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
@@ -59,6 +63,7 @@ sorter2_stage1a <- function(
   output_dir,
   spades = TRUE,
   trim = TRUE,
+  clean_spades_tmp = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -83,7 +88,9 @@ sorter2_stage1a <- function(
     "-spades",
     sorter2_bool_flag(spades),
     "-trim",
-    sorter2_bool_flag(trim)
+    sorter2_bool_flag(trim),
+    "-clean_tmp",
+    sorter2_bool_flag(clean_spades_tmp)
   )
 
   res <- sorter2_run(

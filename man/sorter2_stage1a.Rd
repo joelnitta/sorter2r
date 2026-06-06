@@ -9,6 +9,7 @@ sorter2_stage1a(
   output_dir,
   spades = TRUE,
   trim = TRUE,
+  clean_spades_tmp = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -26,6 +27,11 @@ sorter2_stage1a(
 \item{spades}{Logical flag for SPAdes assembly.}
 
 \item{trim}{Logical flag for TrimGalore trimming.}
+
+\item{clean_spades_tmp}{If \code{TRUE}, delete SPAdes intermediate K-mer graph
+directories (\verb{K21/}, \verb{K33/}, etc.) after each sample assembles. Saves
+substantial disk space at the cost of preventing SPAdes restarts.
+Default \code{FALSE}.}
 
 \item{python}{Python executable to use.}
 
