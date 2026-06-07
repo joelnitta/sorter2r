@@ -6,3 +6,4 @@ inst/dev-data*/
 working.R
 _targets*
 *.code-workspace
+__pycache__/
