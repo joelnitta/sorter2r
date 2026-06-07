@@ -596,7 +596,7 @@ for folder in os.listdir(phaseset):
 			if file.endswith('allsamples_allcontigs.fasta'):
 				with open(file, 'r') as infile:
 					for line in infile:
-						if sample in line and line.startswith('>L'):
+						if sample in line and re.match(r'>L\d+_', line):
 							if args.verbose:
 								print(line)
 							linspl=line.split('_')
@@ -620,7 +620,7 @@ for file in os.listdir(phaseset+'diploidclusters_phased/'):
 				for folder in os.listdir(assemblydir):
 					if 'assembly' in folder:
 						sample=folder.split('_')[0] +'_' + folder.split('_')[1]
-						if sample in line and line.startswith('>L'):
+						if sample in line and re.match(r'>L\d+_', line):
 							if args.verbose:
 								print(line)
 							linspl=line.split('_')
