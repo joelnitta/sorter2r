@@ -50,6 +50,10 @@ parser.add_argument("-pq", "--phasequal")
 parser.add_argument("-al", "--aliter")
 parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-fp", "--filterundiff")
+parser.add_argument(
+    "-v", "--verbose", action="store_true", default=False,
+    help="Print debug information during processing"
+)
 
 args = parser.parse_args()
 # phaseddir: Stage 2 output dir — contains diploids_phased/
@@ -224,17 +228,21 @@ for folder in os.listdir(phaseset):
 						os.rename(src, dst)
 						remove_if_exists(folder + '_contigmap.sam')
 os.chdir(phaseset)
-
+if args.verbose:
+ 
 #Make fasta files for contigs which mapped to the same reference
 for folder in os.listdir(phaseset):
 	if 'assembly' in folder:
-		print(folder)
+		if args.verbose:
+			print(folder)
 		os.chdir(phaseset + folder)
-		readir = os.listdir(phaseset + folder)
+		if args.verbose:
+			readir = os.listdir(phaseset + folder)
 		subprocess.call(["pwd"], shell=True)
 		for file in readir:
 			if file.endswith("contigmap.fa"):
-				print(file)
+				if args.verbose:
+					print(file)
 				with open(file, 'r') as contigfile:
 					for line in contigfile:
 						for id in baitid1:
@@ -242,11 +250,13 @@ for folder in os.listdir(phaseset):
 								#print(line)
 								with open(os.path.join(phaseset + folder, id), 'a') as idx:
 										while True:
-											try:
+											if args.verbose:
+												try:
 												idx.write(line)
 												seq = next(contigfile)
 												idx.write(seq)
-												print(line)
+												if args.verbose:
+													print(line)
 												#print seq
 												break
 											except StopIteration as e:
@@ -261,13 +271,17 @@ for folder in os.listdir(phaseset):
 		subprocess.call(["pwd"], shell=True)
 		for file in readir:
 			if file.endswith("_"):
-				with open(file, 'r') as infile:
+				if args.verbose:
+					with open(file, 'r') as infile:
 					for line in infile:
-						for id in baitid1:
+						if args.verbose:
+							for id in baitid1:
 							if id in line:
-								print(line)
+								if args.verbose:
+									print(line)
 								name = '>' + folder[:-9] + '_' + id + '\n'
-								print(name)
+								if args.verbose:
+									print(name)
 								replaceAll(file, line, name)		
 os.chdir(phaseset)
 
@@ -289,11 +303,13 @@ for folder in os.listdir(phaseset):
 os.chdir(phaseset)
 
 #cluster highly similar contigs (i.e collapsing heterozygotes, or possibly homeologues depending on genetic distance)
-print('Clustering congtigs into Consensus Homeologs at 99% Identity Threshold')
+if args.verbose:
+ print('Clustering congtigs into Consensus Homeologs at 99% Identity Threshold')
 
 for folder in os.listdir(phaseset):
 	if 'assembly' in folder:
-		print(folder)
+		if args.verbose:
+			print(folder)
 		os.chdir(phaseset + folder)
 		readir = os.listdir(phaseset + folder)
 		subprocess.call(["pwd"], shell=True)
@@ -311,13 +327,17 @@ for folder in os.listdir(phaseset):
 		readir = os.listdir(phaseset + folder)
 		subprocess.call(["pwd"], shell=True)
 		for file in readir:
-			if file.endswith("_cons.fa"):
+			if args.verbose:
+				if file.endswith("_cons.fa"):
 				with open(file, 'r') as infile:
-					for line in infile:
+					if args.verbose:
+						for line in infile:
 						if '>' in line:
-							print(line)
+							if args.verbose:
+								print(line)
 							name = '>' + folder[:-9] + '_' + file[:-24] + '\n'
-							print(name)
+							if args.verbose:
+								print(name)
 							replaceAll(file, line, name)	
 
 os.chdir(phaseset)
@@ -401,14 +421,20 @@ os.chdir(phaseset)
 #Map reads to locus-clustered contig-cluster references, get consensus fasta of phased sequences
 for folder in os.listdir(phaseset):
 	if 'assembly' in folder:
-		os.chdir(phaseset + folder)
+		if args.verbose:
+			os.chdir(phaseset + folder)
 		for baits in os.listdir(phaseset + folder):
-			if baits.endswith('final.fasta'):
-				read = folder[:-8] + 'R1_val_1.fq'
-				print(read)
+			if args.verbose:
+				if baits.endswith('final.fasta'):
+				if args.verbose:
+					read = folder[:-8] + 'R1_val_1.fq'
+				if args.verbose:
+					print(read)
 				R2 = folder[:-8] + 'R2_val_2.fq'
-				print(R2)
-				print(baits)
+				if args.verbose:
+					print(R2)
+				if args.verbose:
+					print(baits)
 				dirpath = phaseset + folder + '/'
 				subprocess.call(["bwa index %s" % (baits)], shell=True)
 				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (dirpath+baits, dirpath+read, dirpath+R2, folder[:-8])], shell=True)
@@ -517,11 +543,13 @@ for folder in os.listdir(phaseset):
 									print('Match ' +splithits[0] + ' in ' + splithits[1])
 									with open(phaseset + 'diploidclusters_phased/'+ splithits2[0] + '_' + splithits2[1] +'__allsamples_allcontigs.fasta', 'a+') as baitcluster:
 										while True:
-											try:
+											if args.verbose:
+												try:
 												splitline= line.split('_')
 												#print splitline
 												name = '>' + splithits2[0] + '_' + splithits2[1] +'_' +splitline[0].split('>')[1] + '_'  + splitline[1] +  '_' + splithits2[3]#see if any statement for broader annotation
-												print(name.rstrip('\n') + '_ph0' + '\n')
+												if args.verbose:
+													print(name.rstrip('\n') + '_ph0' + '\n')
 												baitcluster.write(name.rstrip('\n') + '_ph0' + '\n')
 												#seq = phfinal.next()
 												seq = next(phfinal)
@@ -552,11 +580,13 @@ for folder in os.listdir(phaseset):
 									print('Match splithits[0]= ' +splithits[0] + ' in ' + splithits[1])
 									with open(phaseset + 'diploidclusters_phased/'+ splithits2[0] + '_' + splithits2[1] +'__allsamples_allcontigs.fasta', 'a+') as baitcluster:
 										while True:
-											try:
+											if args.verbose:
+												try:
 												splitline= line.split('_')
 												#print splitline
 												name = '>' + splithits2[0] + '_' + splithits2[1] +'_' +splitline[0].split('>')[1] + '_'  + splitline[1] +  '_' + splithits2[3]#see if any statement for broader annotation
-												print(name.rstrip('\n') + '_ph1' + '\n')
+												if args.verbose:
+													print(name.rstrip('\n') + '_ph1' + '\n')
 												baitcluster.write(name.rstrip('\n') + '_ph1' + '\n')
 												#seq = phfinal.next()
 												seq = next(phfinal)
@@ -576,15 +606,20 @@ for folder in os.listdir(phaseset):
 		os.chdir(phaseset+'diploidclusters_phased/')
 		sample=folder.split('_')[0] +'_' + folder.split('_')[1]
 		for file in os.listdir(phaseset+'diploidclusters_phased/'):
-			if file.endswith('allsamples_allcontigs.fasta'):
+			if args.verbose:
+				if file.endswith('allsamples_allcontigs.fasta'):
 				with open(file, 'r') as infile:
-					for line in infile:
+					if args.verbose:
+						for line in infile:
 						if sample in line and line.startswith('>L'):
-							print(line)
+							if args.verbose:
+								print(line)
 							linspl=line.split('_')
-							print(linspl)
+							if args.verbose:
+								print(linspl)
 							name = '>' + '_'.join(linspl[2:]).rstrip('\n') + '\n'
-							print(name)
+							if args.verbose:
+								print(name)
 							replaceAll(file, line, name)
 
 
@@ -597,15 +632,20 @@ for file in os.listdir(phaseset+'diploidclusters_phased/'):
 		os.chdir(phaseset+'diploidclusters_phased/')
 		with open(file, 'r') as infile:
 			for line in infile:
-				for folder in os.listdir(assemblydir):
+				if args.verbose:
+					for folder in os.listdir(assemblydir):
 					if 'assembly' in folder:
-						sample=folder.split('_')[0] +'_' + folder.split('_')[1]
+						if args.verbose:
+							sample=folder.split('_')[0] +'_' + folder.split('_')[1]
 						if sample in line and line.startswith('>L'):
-							print(line)
+							if args.verbose:
+								print(line)
 							linspl=line.split('_')
-							print(linspl)
+							if args.verbose:
+								print(linspl)
 							name = '>' + linspl[2] + '_' + linspl[3] + '_' + linspl[4]
-							print(name)
+							if args.verbose:
+								print(name)
 							replaceAll(file, line, name)
 
 os.chdir(phaseset+'diploidclusters_phased/')
@@ -634,14 +674,18 @@ os.chdir(phaseset+'diploidclusters_phased/')
 
 #reannotate trimmed alignment to remove trimal bp annotation
 for file in os.listdir(phaseset+'diploidclusters_phased/'):
-	if file.endswith('trimmed.fasta'):
+	if args.verbose:
+		if file.endswith('trimmed.fasta'):
 		with open(file, 'r') as infile:
 			for line in infile:
-				if '>' in line:
-					print(line)
+				if args.verbose:
+					if '>' in line:
+					if args.verbose:
+						print(line)
 					linspl=line.split(' ')
 					name = linspl[0]
-					print(name)
+					if args.verbose:
+						print(name)
 					replaceAll(file, line, name)
 
 os.chdir(phaseset)
@@ -651,46 +695,58 @@ os.chdir(phaseset)
 HETDICT= {}
 
 print('Getting read statistics')
-
+if args.verbose:
+ 
 for folder in os.listdir(phaseset):
 	if folder.endswith("assembly"):
 		ind=folder[:-9]
-		print(ind)
+		if args.verbose:
+			print(ind)
 		if ind not in HETDICT:
 			HETDICT[ind]={}
 
 for samp in os.listdir(phaseset):
 	if samp.endswith('assembly'):
 		os.chdir(phaseset+samp)
-		for readstat in os.listdir(phaseset+samp):
+		if args.verbose:
+			for readstat in os.listdir(phaseset+samp):
 			if readstat.endswith('readstats.txt'):
 				for ind in HETDICT:
 					if ind in readstat:
-						print(readstat)
+						if args.verbose:
+							print(readstat)
 						with open(readstat, "r") as statfile:
 							lines_to_read = [16, 17]
 							for position, line in enumerate(statfile):
 								if '+' in line:
-									statlabela = line.split(" ")[3]
-									statlabel = statlabela.strip('\n')
+									if args.verbose:
+										statlabela = line.split(" ")[3]
+									if args.verbose:
+										statlabel = statlabela.strip('\n')
 									statinta = line.split(" ")[0]
 									statint = statinta.strip('\n')
-									print(statlabel)
-									print(statint)
+									if args.verbose:
+										print(statlabel)
+									if args.verbose:
+										print(statint)
 									HETDICT[ind][statlabel]=[]
 									HETDICT[ind][statlabel].append(int(statint))
 								else:
-									if position in lines_to_read:
+									if args.verbose:
+										if position in lines_to_read:
 										if position == 16:
 											statlabel = 'readdepth'
 											statint = line.strip('\n')
-											print(statlabel + ' = ' + statint)
+											if args.verbose:
+												print(statlabel + ' = ' + statint)
 											HETDICT[ind][statlabel]=[]
-											HETDICT[ind][statlabel].append(int(float(statint)))
+											if args.verbose:
+												HETDICT[ind][statlabel].append(int(float(statint)))
 										elif position == 17:
 											statlabel = 'coverage'
 											statint = line.strip('\n')
-											print(statlabel + ' = ' + statint)
+											if args.verbose:
+												print(statlabel + ' = ' + statint)
 											HETDICT[ind][statlabel]=[]
 											HETDICT[ind][statlabel].append(int(float(statint)))
 
@@ -729,14 +785,17 @@ def analyze_fasta_files(fasta_files, sample_names, output_csv):
     try:
         # Extract samples identifiers from sample names
         sample_ids = { '_'.join(name.split('_')[:2]): name for name in sample_names }
-        print("Sample IDs extracted: ", sample_ids)
+        if args.verbose:
+         print("Sample IDs extracted: ", sample_ids)
         #make dictionary to hold the unique count data
         data = {os.path.basename(fasta): {sample: set() for sample in sample_ids.keys()} for fasta in fasta_files}
-        print("Initialized data structure: ", data)
+        if args.verbose:
+         print("Initialized data structure: ", data)
         
         for fasta_file in fasta_files:
             fasta_name = os.path.basename(fasta_file)
-            print(f"Processing file: {fasta_file}")
+            if args.verbose:
+             print(f"Processing file: {fasta_file}")
             # Read the FASTA file
             for record in SeqIO.parse(fasta_file, 'fasta'):
                 seq_id = record.id
@@ -776,9 +835,11 @@ os.chdir(phaseset+'diploidclusters_phased/')
 #Generate summary table of progenitor representation across all loci
 # Get FASTA file names
 fasta_files = [file for file in os.listdir(phaseset+'diploidclusters_phased/') if file.endswith("trimmed.fasta")]
-print(fasta_files)
+if args.verbose:
+ print(fasta_files)
 sample_names = [file for file in os.listdir(phaseset) if file.endswith("assembly")]
-print(sample_names)
+if args.verbose:
+ print(sample_names)
 output_csv = "progenitor_distributions.csv"
 
 os.chdir(phaseset+'diploidclusters_phased/')
@@ -796,7 +857,8 @@ def count_unique_strings_across_fasta(fasta_files, sample_names, output_csv):
         
         for fasta_file in fasta_files:
             fasta_name = os.path.basename(fasta_file)
-            print(f"Processing file: {fasta_file}")
+            if args.verbose:
+             print(f"Processing file: {fasta_file}")
             # Temporary dictionary for this FASTA file
             temp_data = {sample: set() for sample in sample_ids.keys()}
             

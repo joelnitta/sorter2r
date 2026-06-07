@@ -123,6 +123,8 @@ sorter2_stage1a <- function(
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
 #' @param idformat Identifier format.
+#' @param verbose If `TRUE`, pass `-v` to the Python script to print
+#'   per-item debug information during processing. Default `FALSE`.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
@@ -144,6 +146,7 @@ sorter2_stage1b <- function(
   aliter = 1000,
   indelrep = 0.1,
   idformat = "onlysample",
+  verbose = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -184,6 +187,7 @@ sorter2_stage1b <- function(
     "-idformat",
     as.character(idformat)
   )
+  if (isTRUE(verbose)) args <- c(args, "-v")
 
   res <- sorter2_run(
     script = "SORTER2_Stage1B_AssembleOrthologs.py",
@@ -214,6 +218,8 @@ sorter2_stage1b <- function(
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
 #' @param idformat Identifier format.
+#' @param verbose If `TRUE`, pass `-v` to the Python script to print
+#'   per-item debug information during processing. Default `FALSE`.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
@@ -232,6 +238,7 @@ sorter2_stage2 <- function(
   aliter = 1000,
   indelrep = 0.1,
   idformat = "phase",
+  verbose = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -269,6 +276,7 @@ sorter2_stage2 <- function(
     reads_dir <- sorter2_with_trailing_slash(reads_dir)
     args <- c(args, "-reads", reads_dir)
   }
+  if (isTRUE(verbose)) args <- c(args, "-v")
 
   res <- sorter2_run(
     script = "SORTER2_Stage2_PhaseOrthologs.py",
@@ -307,6 +315,8 @@ sorter2_stage2 <- function(
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
 #' @param filterundiff Logical flag for filtering undifferentiated loci.
+#' @param verbose If `TRUE`, pass `-v` to the Python script to print
+#'   per-item debug information during processing. Default `FALSE`.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
@@ -332,6 +342,7 @@ sorter2_stage3 <- function(
   aliter = 1000,
   indelrep = 0.1,
   filterundiff = FALSE,
+  verbose = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -427,6 +438,7 @@ sorter2_stage3 <- function(
     "-fp",
     sorter2_bool_flag(filterundiff)
   )
+  if (isTRUE(verbose)) args <- c(args, "-v")
 
   res <- sorter2_run(
     script = "SORTER2_Stage3_PhaseHybrids.py",

@@ -44,6 +44,10 @@ parser.add_argument("-ref", "--refdir")
 parser.add_argument("-al", "--aliter")
 parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-idformat", "--idformat")
+parser.add_argument(
+    "-v", "--verbose", action="store_true", default=False,
+    help="Print debug information during processing"
+)
 args = parser.parse_args()
 
 outdir = args.outputdir if args.outputdir.endswith('/') else args.outputdir + '/'
@@ -203,9 +207,6 @@ if args.recluster == 'T':
 	#Make summary files of Consensus Alleles per Sample
 	map_contigs_to_baits_dir=sorted(os.listdir(contigdir))
 
-	for folder in map_contigs_to_baits_dir:
-		print(folder)
-
 	os.chdir(contigdir)
 
 	DICT= {}
@@ -230,9 +231,11 @@ if args.recluster == 'T':
 			for bait in DICT.keys():
 				for record in input_fasta:
 					bait=record.id.split('_', 3)[2]
-					print(bait)
+					if args.verbose:
+						print(bait)
 					folder = record.id.split('_', 3)[0]+"_"+record.id.split('_', 3)[1]+"_"
-					print(folder)
+					if args.verbose:
+						print(folder)
 					seq=record.seq
 					DICT[bait][folder].append(seq)
 					#print(DICT)
@@ -281,7 +284,6 @@ if args.recluster == 'T':
 	for file in os.listdir(contigdir):
 		if '_cl' in file:
 			newfilename=file+'_'
-			print(newfilename)
 			os.rename(file,newfilename)
 
 	os.chdir(contigdir)
@@ -298,11 +300,8 @@ if args.recluster == 'T':
 						with open(file, 'r') as infile:
 							for line in infile:
 								if '>' in line:
-									print(line)
 									linspl=line.split('_')
-									print(linspl)
 									name = linspl[0] + '_' + cid + linspl[1] + '_' + linspl[2] + '_'+ linspl[3]
-									print(name)
 									replaceAll(file, line, name)
 
 	os.chdir(contigdir)
@@ -344,11 +343,14 @@ if args.recluster == 'T':
 		if '_cl' in file:
 			if not 'trimmed_deint' in file:
 				src =contigdir + file
-				print(src)
+				if args.verbose:
+					print(src)
 				dst = outdir + 'diploidclusters/'+ file
-				print(dst)
+				if args.verbose:
+					print(dst)
 				os.rename(src, dst)
-				print(file)
+				if args.verbose:
+					print(file)
 
 	os.chdir(args.workingdir)
 
@@ -381,9 +383,11 @@ if args.recluster == 'T':
 				for record in input_fasta:
 					bait= record.id.split('_', 1)[0]
 					baitcluster= 'L' + bait.split('L', 1)[1] + '_' + record.id.split('_', 3)[1] + '_'
-					print(baitcluster)
+					if args.verbose:
+						print(baitcluster)
 					folder = record.id.split('_', 4)[2] + '_' + record.id.split('_', 4)[3] + '_'
-					print(folder)
+					if args.verbose:
+						print(folder)
 					seq=record.seq
 					DICT2[baitcluster][folder].append(seq)
 					#print(DICT2)
@@ -427,12 +431,15 @@ if args.recluster == 'T':
 				with open(file, 'r') as infile:
 					for line in infile:
 						if '>' in line:
-							print(line)
+							if args.verbose:
+								print(line)
 							linspl=line.split(' ')[0]
 							linspl2=linspl.split('_')
-							print(linspl2)
+							if args.verbose:
+								print(linspl2)
 							name = linspl2[0] + '_' + linspl2[1] + '_' + linspl2[2] + '_' + linspl2[3]
-							print(name)
+							if args.verbose:
+								print(name)
 							replaceAll(file, line, name)
 	else:
 		if 'onlysample' in args.idformat:
@@ -442,12 +449,15 @@ if args.recluster == 'T':
 					with open(file, 'r') as infile:
 						for line in infile:
 							if '>' in line:
-								print(line)
+								if args.verbose:
+									print(line)
 								linspl=line.split(' ')[0]
 								linspl2=linspl.split('_')
-								print(linspl2)
+								if args.verbose:
+									print(linspl2)
 								name = '>' + linspl2[2] + '_' + linspl2[3]
-								print(name)
+								if args.verbose:
+									print(name)
 								replaceAll(file, line, name)
 		else:
 			sys.exit("-idformat flag not set or did not correspond to 'full', 'copies', or 'onlysample' keeping default trimal headers; e.g. >L100_cl0_WA10_sampleid_0 1230 bp ")
@@ -491,23 +501,27 @@ else:
 
 	for folder in direc:
 		if 'assembly' in folder:
-			print(folder)
+			if args.verbose:
+				print(folder)
 			wf_folder = workfilesdir + folder + '/'
 			for filename in os.listdir(wf_folder):
 				if filename.endswith("_contigmap.fa"):
-					print(filename)
+					if args.verbose:
+						print(filename)
 					with open(wf_folder + filename, 'r') as contigfile:
 						for line in contigfile:
 							for id in baitid1:
 								if id in line:
-									print(line)
+									if args.verbose:
+										print(line)
 									with open(wf_folder + id, 'a') as idx:
 											while True:
 												try:
 													idx.write(line)
 													seq = next(contigfile)
 													idx.write(seq)
-													print(line)
+													if args.verbose:
+														print(line)
 													#print seq
 													break
 												except StopIteration as e:
@@ -529,9 +543,11 @@ else:
 						for line in infile:
 							for id in baitid1:
 								if id in line:
-									print(line)
+									if args.verbose:
+										print(line)
 									name = '>' + folder[:-9] + '_' + id + '\n'
-									print(name)
+									if args.verbose:
+										print(name)
 									replaceAll(filepath, line, name)
 	os.chdir(args.workingdir)
 
@@ -559,7 +575,8 @@ else:
 
 	for folder in direc:
 		if 'assembly' in folder:
-			print(folder)
+			if args.verbose:
+				print(folder)
 			wf_folder = workfilesdir + folder + '/'
 			os.chdir(wf_folder)
 			for filename in os.listdir(wf_folder):
@@ -577,9 +594,11 @@ else:
 					with open(filepath, 'r') as infile:
 						for line in infile:
 							if '>' in line:
-								print(line)
+								if args.verbose:
+									print(line)
 								name = '>' + folder[:-9] + '_' + filename[:-8] + '\n'
-								print(name)
+								if args.verbose:
+									print(name)
 								replaceAll(filepath, line, name)
 	os.chdir(args.workingdir)
 
@@ -610,7 +629,8 @@ else:
 			wf_folder = workfilesdir + folder + '/'
 			for filename in os.listdir(wf_folder):
 				if filename.endswith("_longestfiltered.fa"):
-					print(filename)
+					if args.verbose:
+						print(filename)
 					os.remove(wf_folder + filename)
 
 
@@ -655,7 +675,8 @@ else:
 	map_contigs_to_baits_dir=sorted(os.listdir(contigdir))
 
 	for folder in map_contigs_to_baits_dir:
-		print(folder)
+		if args.verbose:
+			print(folder)
 
 	os.chdir(contigdir)
 
@@ -679,9 +700,11 @@ else:
 			for bait in DICT.keys():
 				for record in input_fasta:
 					bait=record.id.split('_', 3)[2]
-					print(bait)
+					if args.verbose:
+						print(bait)
 					folder=record.id.split('_', 3)[0]+"_"+record.id.split('_', 3)[1]+"_"
-					print(folder)
+					if args.verbose:
+						print(folder)
 					seq=record.seq
 					DICT[bait][folder].append(seq)
 					#print(DICT)
@@ -731,7 +754,6 @@ else:
 	for file in os.listdir(contigdir):
 		if '_cl' in file:
 			newfilename=file+'_'
-			print(newfilename)
 			os.rename(file,newfilename)
 
 	os.chdir(contigdir)
@@ -748,11 +770,14 @@ else:
 						with open(file, 'r') as infile:
 							for line in infile:
 								if '>' in line:
-									print(line)
+									if args.verbose:
+										print(line)
 									linspl=line.split('_')
-									print(linspl)
+									if args.verbose:
+										print(linspl)
 									name = linspl[0] + '_' + cid + linspl[1] + '_' + linspl[2] + '_'+ linspl[3]
-									print(name)
+									if args.verbose:
+										print(name)
 									replaceAll(file, line, name)
 
 	os.chdir(contigdir)
@@ -800,11 +825,14 @@ else:
 		if '_cl' in file:
 			if not 'trimmed_deint' in file:
 				src =contigdir + file
-				print(src)
+				if args.verbose:
+					print(src)
 				dst = outdir + 'diploidclusters/'+ file
-				print(dst)
+				if args.verbose:
+					print(dst)
 				os.rename(src, dst)
-				print(file)
+				if args.verbose:
+					print(file)
 
 	os.chdir(diploidclusters)
 
@@ -836,9 +864,11 @@ else:
 				for record in input_fasta:
 					bait= record.id.split('_', 1)[0]
 					baitcluster= 'L' + bait.split('L', 1)[1] + '_' + record.id.split('_', 3)[1] + '_'
-					print(baitcluster)
+					if args.verbose:
+						print(baitcluster)
 					folder = record.id.split('_', 4)[2] + '_' + record.id.split('_', 4)[3] + '_'
-					print(folder)
+					if args.verbose:
+						print(folder)
 					seq=record.seq
 					DICT2[baitcluster][folder].append(seq)
 
@@ -879,12 +909,15 @@ else:
 				with open(file, 'r') as infile:
 					for line in infile:
 						if '>' in line:
-							print(line)
+							if args.verbose:
+								print(line)
 							linspl=line.split(' ')[0]
 							linspl2=linspl.split('_')
-							print(linspl2)
+							if args.verbose:
+								print(linspl2)
 							name = linspl2[0] + '_' + linspl2[1] + '_' + linspl2[2] + '_' + linspl2[3]
-							print(name)
+							if args.verbose:
+								print(name)
 							replaceAll(file, line, name)
 	else:
 		if 'onlysample' in args.idformat:
@@ -894,12 +927,15 @@ else:
 					with open(file, 'r') as infile:
 						for line in infile:
 							if '>' in line:
-								print(line)
+								if args.verbose:
+									print(line)
 								linspl=line.split(' ')[0]
 								linspl2=linspl.split('_')
-								print(linspl2)
+								if args.verbose:
+									print(linspl2)
 								name = '>' + linspl2[2] + '_' + linspl2[3]
-								print(name)
+								if args.verbose:
+									print(name)
 								replaceAll(file, line, name)
 		else:
 			sys.exit("-idformat flag not set or did not correspond to 'full', 'copies', or 'onlysample' keeping default trimal headers; e.g. >L100_cl0_WA10_sampleid_0 1230 bp ")

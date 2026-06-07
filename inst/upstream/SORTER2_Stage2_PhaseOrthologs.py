@@ -44,6 +44,10 @@ parser.add_argument("-idformat", "--idformat")
 # without Trim Galore (trim=F).  When omitted, reads are expected inside
 # each *_assembly/ subdirectory as *_R1_val_1.fq / *_R2_val_2.fq.
 parser.add_argument("-reads", "--readsdir", default=None)
+parser.add_argument(
+    "-v", "--verbose", action="store_true", default=False,
+    help="Print debug information during processing"
+)
 args = parser.parse_args()
 
 assemblydir = args.assemblydir if args.assemblydir.endswith('/') else args.assemblydir + '/'
@@ -191,7 +195,8 @@ for file in os.listdir(workdipclusters):
 						+ '_assembly')
 					sample = (linspl[2] + '_' + linspl[3].strip('\n')
 						+ '_allcontigs_allclusterbaits_annotated.fasta')
-					print(linspl)
+					if args.verbose:
+						print(linspl)
 					wf_folder = workfilesdir + folder_name + '/'
 					os.makedirs(wf_folder, exist_ok=True)
 					with open(wf_folder + sample, 'a+') as idx:
@@ -203,7 +208,8 @@ for file in os.listdir(workdipclusters):
 									idx.write(line)
 									seq = next(allsamplefile)
 									idx.write(seq)
-									print(line)
+									if args.verbose:
+										print(line)
 									break
 								except StopIteration as e:
 									print(e)
@@ -242,8 +248,9 @@ for folder in direc:
 						'Pass -reads to specify a raw FASTQ directory '
 						'when Stage 1A was run without Trim Galore.' % trimmed_R1)
 				prefix = wf_folder + sample_base
-				print(read_path)
-				print(R2_path)
+				if args.verbose:
+					print(read_path)
+					print(R2_path)
 				subprocess.call(["bwa index %s" % (baits_path)], shell=True)
 				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (
 					baits_path, read_path, R2_path, prefix)], shell=True)
@@ -315,9 +322,11 @@ for folder in direc:
 				with open(filepath, 'r') as infile:
 					for line in infile:
 						if '>' in line:
-							print(line)
+							if args.verbose:
+								print(line)
 							name = line.rstrip('\n') + '_ph0' + '\n'
-							print(name)
+							if args.verbose:
+								print(name)
 							replaceAll(filepath, line, name)
 
 for folder in direc:
@@ -329,9 +338,11 @@ for folder in direc:
 				with open(filepath, 'r') as infile:
 					for line in infile:
 						if '>' in line:
-							print(line)
+							if args.verbose:
+								print(line)
 							name = line.rstrip('\n') + '_ph1' + '\n'
-							print(name)
+							if args.verbose:
+								print(name)
 							replaceAll(filepath, line, name)
 
 ##Concatenate Phased seqs files
@@ -384,12 +395,15 @@ for folder in map_contigs_to_baits_dir:
 			for record in input_fasta:
 				bait = record.id.split('_', 1)[0]
 				baitcluster = 'L' + bait.split('L', 1)[1] + '_' + record.id.split('_', 3)[1] + '_'
-				print(baitcluster)
+				if args.verbose:
+					print(baitcluster)
 				phase = (record.id.split('_', 4)[4]).rstrip('\n')
-				print(phase)
+				if args.verbose:
+					print(phase)
 				folder = record.id.split('_', 4)[2] + '_' + record.id.split('_', 4)[3] + '_' + phase
-				print(record.id.split('_', 4)[3])
-				print(folder)
+				if args.verbose:
+					print(record.id.split('_', 4)[3])
+					print(folder)
 				seq = record.seq
 				DICT2[baitcluster][folder].append(seq)
 
@@ -465,7 +479,8 @@ HETDICT = {}
 for folder in os.listdir(workfilesdir):
 	if folder.endswith("assembly"):
 		ind = folder[:-9]
-		print(ind)
+		if args.verbose:
+			print(ind)
 		if ind not in HETDICT:
 			HETDICT[ind] = {}
 
@@ -476,7 +491,8 @@ for samp in os.listdir(workfilesdir):
 			if readstat.endswith('readstats.txt'):
 				for ind in HETDICT:
 					if ind in readstat:
-						print(readstat)
+						if args.verbose:
+							print(readstat)
 						with open(samp_dir + readstat, "r") as statfile:
 							lines_to_read = [16, 17]
 							for position, line in enumerate(statfile):
@@ -485,8 +501,9 @@ for samp in os.listdir(workfilesdir):
 									statlabel = statlabela.strip('\n')
 									statinta = line.split(" ")[0]
 									statint = statinta.strip('\n')
-									print(statlabel)
-									print(statint)
+									if args.verbose:
+										print(statlabel)
+										print(statint)
 									HETDICT[ind][statlabel] = []
 									HETDICT[ind][statlabel].append(int(statint))
 								else:
@@ -494,13 +511,15 @@ for samp in os.listdir(workfilesdir):
 										if position == 16:
 											statlabel = 'readdepth'
 											statint = line.strip('\n')
-											print(statlabel + ' = ' + statint)
+											if args.verbose:
+												print(statlabel + ' = ' + statint)
 											HETDICT[ind][statlabel] = []
 											HETDICT[ind][statlabel].append(int(float(statint)))
 										elif position == 17:
 											statlabel = 'coverage'
 											statint = line.strip('\n')
-											print(statlabel + ' = ' + statint)
+											if args.verbose:
+												print(statlabel + ' = ' + statint)
 											HETDICT[ind][statlabel] = []
 											HETDICT[ind][statlabel].append(int(float(statint)))
 
@@ -535,12 +554,15 @@ if 'full' in args.idformat:
 			with open(file, 'r') as infile:
 				for line in infile:
 					if '>' in line:
-						print(line)
+						if args.verbose:
+							print(line)
 						linspl = line.split(' ')[0]
 						linspl2 = linspl.split('_')
-						print(linspl2)
+						if args.verbose:
+							print(linspl2)
 						name = linspl2[0] + '_' + linspl2[1] + '_' + linspl2[2] + '_' + linspl2[3] + '_' + linspl2[4]
-						print(name)
+						if args.verbose:
+							print(name)
 						replaceAll(file, line, name)
 	print('Kept full sequence ID annotations; e.g. >L100_cl0_WA10_sampleid_0')
 else:
@@ -550,12 +572,15 @@ else:
 				with open(file, 'r') as infile:
 					for line in infile:
 						if '>' in line:
-							print(line)
+							if args.verbose:
+								print(line)
 							linspl = line.split(' ')[0]
 							linspl2 = linspl.split('_')
-							print(linspl2)
+							if args.verbose:
+								print(linspl2)
 							name = '>' + linspl2[2] + '_' + linspl2[3] + '_' + linspl2[4]
-							print(name)
+							if args.verbose:
+								print(name)
 							replaceAll(file, line, name)
 		print('Annotated alignments as: >@@##_sampleid_0/1 (annotated with phase)')
 	else:
@@ -566,12 +591,15 @@ else:
 					with open(file, 'r') as infile:
 						for line in infile:
 							if '>' in line:
-								print(line)
+								if args.verbose:
+									print(line)
 								linspl = line.split(' ')[0]
 								linspl2 = linspl.split('_')
-								print(linspl2)
+								if args.verbose:
+									print(linspl2)
 								name = '>' + linspl2[2] + '_' + linspl2[3] + '\n'
-								print(name)
+								if args.verbose:
+									print(name)
 								replaceAll(file, line, name)
 			print('Annotated alignments as: >@@##_sampleid (no phase annotations)')
 		else:
