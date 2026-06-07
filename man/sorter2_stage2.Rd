@@ -13,6 +13,7 @@ sorter2_stage2(
   aliter = 1000,
   indelrep = 0.1,
   idformat = "phase",
+  verbose = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -43,6 +44,9 @@ output (\verb{*_R1_val_1.fq}) inside each \verb{*_assembly/} subdirectory.}
 \item{indelrep}{Indel representation threshold.}
 
 \item{idformat}{Identifier format.}
+
+\item{verbose}{If \code{TRUE}, pass \code{-v} to the Python script to print
+per-item debug information during processing. Default \code{FALSE}.}
 
 \item{python}{Python executable to use.}
 

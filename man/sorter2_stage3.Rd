@@ -18,6 +18,7 @@ sorter2_stage3(
   aliter = 1000,
   indelrep = 0.1,
   filterundiff = FALSE,
+  verbose = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -61,6 +62,9 @@ from \code{phaseset_dir}. When \code{NULL}, all \verb{*_assembly/} dirs are copi
 \item{indelrep}{Indel representation threshold.}
 
 \item{filterundiff}{Logical flag for filtering undifferentiated loci.}
+
+\item{verbose}{If \code{TRUE}, pass \code{-v} to the Python script to print
+per-item debug information during processing. Default \code{FALSE}.}
 
 \item{python}{Python executable to use.}
 

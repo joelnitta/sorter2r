@@ -16,6 +16,7 @@ sorter2_stage1b(
   aliter = 1000,
   indelrep = 0.1,
   idformat = "onlysample",
+  verbose = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -49,6 +50,9 @@ be created.}
 \item{indelrep}{Indel representation threshold.}
 
 \item{idformat}{Identifier format.}
+
+\item{verbose}{If \code{TRUE}, pass \code{-v} to the Python script to print
+per-item debug information during processing. Default \code{FALSE}.}
 
 \item{python}{Python executable to use.}
 
