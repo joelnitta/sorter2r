@@ -7,3 +7,4 @@
 ^_targets$
 ^_targets\.R$
 ^working\.R$
+^sorter2r\.code-workspace$
