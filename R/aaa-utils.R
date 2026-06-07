@@ -213,20 +213,30 @@ sorter2_run <- function(
     wd = working_dir
   )
 
+  # usearch v12+ emits binary bytes (NUL characters) in its startup header,
+  # which causes processx read_*_lines() to error. Skip those chunks.
+  read_lines_safe <- function(fn) {
+    tryCatch(fn(), error = function(e) {
+      if (grepl("nul", conditionMessage(e), ignore.case = TRUE))
+        return(character(0))
+      stop(e)
+    })
+  }
+
   while (TRUE) {
     ready <- p$poll_io(timeout = 200L)
-    out_lines <- if (ready[["output"]] == "ready") p$read_output_lines()
-      else character(0)
-    err_lines <- if (ready[["error"]] == "ready") p$read_error_lines()
-      else character(0)
+    out_lines <- if (ready[["output"]] == "ready")
+      read_lines_safe(function() p$read_output_lines()) else character(0)
+    err_lines <- if (ready[["error"]] == "ready")
+      read_lines_safe(function() p$read_error_lines()) else character(0)
     for (l in out_lines) message(l)
     for (l in err_lines) message(l)
     if (ready[["output"]] == "closed" && ready[["error"]] == "closed") break
     # conda run sometimes holds pipes open after the child exits; break once
     # the process is dead and a full poll cycle yields no new output.
     if (!p$is_alive() && length(out_lines) == 0L && length(err_lines) == 0L) {
-      for (l in p$read_output_lines()) message(l)
-      for (l in p$read_error_lines()) message(l)
+      for (l in read_lines_safe(function() p$read_output_lines())) message(l)
+      for (l in read_lines_safe(function() p$read_error_lines())) message(l)
       break
     }
   }
