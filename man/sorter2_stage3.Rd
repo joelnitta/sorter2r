@@ -10,6 +10,7 @@ sorter2_stage3(
   output_dir,
   phaseset_dir = NULL,
   hybrid_samples = NULL,
+  reads_dir = NULL,
   ref,
   loci,
   contigscafnum = 20,
@@ -46,6 +47,11 @@ by the user before calling this function.}
 \item{hybrid_samples}{Optional character vector of sample base names (e.g.
 \code{"Iimura46_cgrande"}) used to filter which \verb{*_assembly/} dirs are copied
 from \code{phaseset_dir}. When \code{NULL}, all \verb{*_assembly/} dirs are copied.}
+
+\item{reads_dir}{Optional directory containing raw FASTQ files
+(\verb{*_R1.fastq} / \verb{*_R2.fastq}). Required when Stage 1A was run with
+\code{trim = FALSE}. When \code{NULL} (the default), Stage3 expects Trim Galore
+output (\verb{*_R1_val_1.fq}) inside each \verb{phaseset/*_assembly/} subdirectory.}
 
 \item{ref}{Reference file path.}
 
