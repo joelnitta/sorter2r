@@ -23,13 +23,13 @@ import glob
 def run_usearch(cmd):
     cwd = os.getcwd()
     if shutil.which('usearch'):
-        subprocess.call('usearch ' + cmd, shell=True)
+        subprocess.call('usearch ' + cmd, shell=True, **quiet)
     elif shutil.which('docker'):
         docker_cmd = (
             'docker run --rm -v %s:%s -w %s '
             'joelnitta/usearch:latest %s' % (cwd, cwd, cwd, cmd)
         )
-        subprocess.call(docker_cmd, shell=True)
+        subprocess.call(docker_cmd, shell=True, **quiet)
     else:
         sys.exit(
             'Error: usearch not found. Install usearch locally or install '
@@ -57,6 +57,9 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
+quiet = {} if args.verbose else {
+    "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL
+}
 # phaseddir: Stage 2 output dir — contains diploids_phased/
 phaseddir = args.phaseddir if args.phaseddir.endswith('/') else args.phaseddir + '/'
 # assemblydir: Stage 1A output dir — contains *_assembly/ dirs for diploid samples
@@ -225,8 +228,8 @@ for folder in os.listdir(phaseset):
 						conscontig= args.refdir
 						contigmap=phaseset+ folder + "/" + file + "/"+ contig
 						os.chdir(dirpath)
-						subprocess.call(["bwa mem -V %s %s > %s_contigmap.sam" % (conscontig, contigmap, dirpath+folder)], shell=True)
-						subprocess.call(["samtools view -S -F 4 %s_contigmap.sam | awk -v OFS='\t' '{print \">\" $3\"_\" \"\\n \" $10}' > %scontigmap.fa " % (dirpath+folder,folder + '_')], shell=True)
+						subprocess.call(["bwa mem -V %s %s > %s_contigmap.sam" % (conscontig, contigmap, dirpath+folder)], shell=True, **quiet)
+						subprocess.call(["samtools view -S -F 4 %s_contigmap.sam | awk -v OFS='\t' '{print \">\" $3\"_\" \"\\n \" $10}' > %scontigmap.fa " % (dirpath+folder,folder + '_')], shell=True, **quiet)
 						src = folder +'_contigmap.fa'
 						dst = dirpath + folder + '_contigmap.fa'
 						os.rename(src, dst)
@@ -240,7 +243,7 @@ for folder in os.listdir(phaseset):
 			print(folder)
 		os.chdir(phaseset + folder)
 		readir = os.listdir(phaseset + folder)
-		subprocess.call(["pwd"], shell=True)
+		subprocess.call(["pwd"], shell=True, **quiet)
 		for file in readir:
 			if file.endswith("contigmap.fa"):
 				if args.verbose:
@@ -261,7 +264,8 @@ for folder in os.listdir(phaseset):
 												#print seq
 												break
 											except StopIteration as e:
-												print(e)
+												if args.verbose:
+													print(e)
 												break
 
 # #Rename contigs with locus ID
@@ -269,7 +273,7 @@ for folder in os.listdir(phaseset):
 	if 'assembly' in folder:
 		os.chdir(phaseset + folder)
 		readir = os.listdir(phaseset + folder)
-		subprocess.call(["pwd"], shell=True)
+		subprocess.call(["pwd"], shell=True, **quiet)
 		for file in readir:
 			if file.endswith("_"):
 				with open(file, 'r') as infile:
@@ -291,13 +295,13 @@ for folder in os.listdir(phaseset):
 	if 'assembly' in folder:
 		os.chdir(phaseset + folder)
 		readir = os.listdir(phaseset + folder)
-		subprocess.call(["pwd"], shell=True)
+		subprocess.call(["pwd"], shell=True, **quiet)
 		for file in readir:
 			if file.endswith("_"):
 				#Get longest Contigs
 				extract_longest_sequences(file, args.contigscafnum)
 				#Remove sequences shorter than x bp
-				subprocess.call(["seqtk seq -L %s %slongest.fa > %slongestfiltered.fa" % (args.contigscaflen, file, file)], shell=True )
+				subprocess.call(["seqtk seq -L %s %slongest.fa > %slongestfiltered.fa" % (args.contigscaflen, file, file)], shell=True, **quiet)
 
 os.chdir(phaseset)
 
@@ -310,7 +314,7 @@ for folder in os.listdir(phaseset):
 			print(folder)
 		os.chdir(phaseset + folder)
 		readir = os.listdir(phaseset + folder)
-		subprocess.call(["pwd"], shell=True)
+		subprocess.call(["pwd"], shell=True, **quiet)
 		for file in readir:
 			if file.endswith("longestfiltered.fa"):
 				run_usearch("-cluster_fast %s -id 0.99 -centroids %s_cons.fa" % (file, file[:-3]))
@@ -323,7 +327,7 @@ for folder in os.listdir(phaseset):
 	if 'assembly' in folder:
 		os.chdir(phaseset + folder)
 		readir = os.listdir(phaseset + folder)
-		subprocess.call(["pwd"], shell=True)
+		subprocess.call(["pwd"], shell=True, **quiet)
 		for file in readir:
 			if file.endswith("_cons.fa"):
 				with open(file, 'r') as infile:
@@ -343,7 +347,7 @@ for folder in os.listdir(phaseset):
 	if 'assembly' in folder:
 		os.chdir(phaseset + folder)
 		readir = os.listdir(phaseset + folder)
-		subprocess.call(["pwd"], shell=True)
+		subprocess.call(["pwd"], shell=True, **quiet)
 		for file in readir:
 			if file.endswith("_cons.fa"):
 				os.chdir(phaseset + folder)
@@ -360,7 +364,8 @@ for folder in os.listdir(phaseset):
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if file.endswith("_"):
-				print('deleting: ' + file)
+				if args.verbose:
+					print('deleting: ' + file)
 				os.remove(dirpath + file)
 
 os.chdir(phaseset)
@@ -373,7 +378,8 @@ for folder in os.listdir(phaseset):
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if file.endswith("_longest.fa"):
-				print('deleting: ' + file)
+				if args.verbose:
+					print('deleting: ' + file)
 				os.remove(dirpath + file)
 
 for folder in os.listdir(phaseset):
@@ -383,7 +389,8 @@ for folder in os.listdir(phaseset):
 		iterpath = os.listdir(dirpath)
 		for file in iterpath:
 			if file.endswith("_longestfiltered.fa"):
-				print('deleting: ' + file)
+				if args.verbose:
+					print('deleting: ' + file)
 				os.remove(dirpath + file)
 
 os.chdir(phaseset)
@@ -392,8 +399,9 @@ os.chdir(phaseset)
 for folder in os.listdir(phaseset):
 	if 'assembly' in folder:
 		os.chdir(phaseset + folder)
-		subprocess.call(["cat *_annotated.fasta  > %s_allcontigs_allbaits.fasta" % (folder[:-9])], shell=True)
-		print("deinterleaving " + folder[:-9] +'_allcontigs_allbaits.fasta')
+		subprocess.call(["cat *_annotated.fasta  > %s_allcontigs_allbaits.fasta" % (folder[:-9])], shell=True, **quiet)
+		if args.verbose:
+			print("deinterleaving " + folder[:-9] +'_allcontigs_allbaits.fasta')
 		deinterleave_fasta(folder[:-9] +'_allcontigs_allbaits.fasta', folder[:-9]+'_allcontigs_allbaits_deinterleaved.fasta')
 		remove_if_exists(folder[:-9] +'_allcontigs_allbaits.fasta')
 
@@ -444,24 +452,26 @@ for folder in os.listdir(phaseset):
 						% trimmed_R1)
 				if args.verbose:
 					print(read_path)
-					print(R2_path)
-					print(baits)
-				subprocess.call(["bwa index %s" % (baits)], shell=True)
-				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (dirpath+baits, read_path, R2_path, folder[:-8])], shell=True)
-				subprocess.call(["samtools sort %smapreads.sam -o %s" % (dirpath+folder[:-8], dirpath+folder[:-8] + 'mapreads.bam')], shell=True)
-				subprocess.call(["samtools index  %s" % (dirpath+folder[:-8] + 'mapreads.bam')], shell=True)
-				subprocess.call(["samtools phase -A -Q %s -b %s %s" % (args.phasequal, dirpath+folder[:-8], dirpath+folder[:-8] + 'mapreads.bam')], shell=True)
-				subprocess.call(["samtools sort  %s -o %s" % (dirpath+folder[:-8] + '.0.bam', dirpath+folder[:-8] + '0srt.bam')], shell=True)
-				subprocess.call(["samtools sort  %s -o %s" % (dirpath+folder[:-8] + '.1.bam', dirpath+folder[:-8] + '1srt.bam')], shell=True)
-				subprocess.call(["samtools sort  %s -o %s" % (dirpath+folder[:-8] + '.chimera.bam', dirpath+folder[:-8] + 'chimerasrt.bam')], shell=True)
-				subprocess.call(["bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s | bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s " % (dirpath+baits, dirpath+folder[:-8] + '0srt.bam', dirpath+folder[:-8] + '0.vcf.gz' )], shell=True)
-				subprocess.call(["bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s | bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s " % (dirpath+baits, dirpath+folder[:-8] + '1srt.bam', dirpath+folder[:-8] + '1.vcf.gz' )], shell=True)
-				subprocess.call(["bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s | bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s " % (dirpath+baits, dirpath+folder[:-8] + 'chimerasrt.bam', dirpath+folder[:-8] + 'chimera.vcf.gz' )], shell=True)
-				subprocess.call(["bcftools index  %s" % (dirpath+folder[:-8] + '0.vcf.gz')], shell=True)
-				subprocess.call(["bcftools index  %s" % (dirpath+folder[:-8] + '1.vcf.gz')], shell=True)
-				subprocess.call(["bcftools index  %s" % (dirpath+folder[:-8] + 'chimera.vcf.gz')], shell=True)
-				subprocess.call(["cat %s | bcftools consensus %s > %s0.fasta" % (dirpath+baits, dirpath+folder[:-8] + '0.vcf.gz', folder[:-8])], shell=True)
-				subprocess.call(["cat %s | bcftools consensus %s > %s1.fasta" % (dirpath+baits, dirpath+folder[:-8] + '1.vcf.gz', folder[:-8])], shell=True)
+					if args.verbose:
+						print(R2_path)
+					if args.verbose:
+						print(baits)
+				subprocess.call(["bwa index %s" % (baits)], shell=True, **quiet)
+				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (dirpath+baits, read_path, R2_path, folder[:-8])], shell=True, **quiet)
+				subprocess.call(["samtools sort %smapreads.sam -o %s" % (dirpath+folder[:-8], dirpath+folder[:-8] + 'mapreads.bam')], shell=True, **quiet)
+				subprocess.call(["samtools index  %s" % (dirpath+folder[:-8] + 'mapreads.bam')], shell=True, **quiet)
+				subprocess.call(["samtools phase -A -Q %s -b %s %s" % (args.phasequal, dirpath+folder[:-8], dirpath+folder[:-8] + 'mapreads.bam')], shell=True, **quiet)
+				subprocess.call(["samtools sort  %s -o %s" % (dirpath+folder[:-8] + '.0.bam', dirpath+folder[:-8] + '0srt.bam')], shell=True, **quiet)
+				subprocess.call(["samtools sort  %s -o %s" % (dirpath+folder[:-8] + '.1.bam', dirpath+folder[:-8] + '1srt.bam')], shell=True, **quiet)
+				subprocess.call(["samtools sort  %s -o %s" % (dirpath+folder[:-8] + '.chimera.bam', dirpath+folder[:-8] + 'chimerasrt.bam')], shell=True, **quiet)
+				subprocess.call(["bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s | bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s " % (dirpath+baits, dirpath+folder[:-8] + '0srt.bam', dirpath+folder[:-8] + '0.vcf.gz' )], shell=True, **quiet)
+				subprocess.call(["bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s | bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s " % (dirpath+baits, dirpath+folder[:-8] + '1srt.bam', dirpath+folder[:-8] + '1.vcf.gz' )], shell=True, **quiet)
+				subprocess.call(["bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s | bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s " % (dirpath+baits, dirpath+folder[:-8] + 'chimerasrt.bam', dirpath+folder[:-8] + 'chimera.vcf.gz' )], shell=True, **quiet)
+				subprocess.call(["bcftools index  %s" % (dirpath+folder[:-8] + '0.vcf.gz')], shell=True, **quiet)
+				subprocess.call(["bcftools index  %s" % (dirpath+folder[:-8] + '1.vcf.gz')], shell=True, **quiet)
+				subprocess.call(["bcftools index  %s" % (dirpath+folder[:-8] + 'chimera.vcf.gz')], shell=True, **quiet)
+				subprocess.call(["cat %s | bcftools consensus %s > %s0.fasta" % (dirpath+baits, dirpath+folder[:-8] + '0.vcf.gz', folder[:-8])], shell=True, **quiet)
+				subprocess.call(["cat %s | bcftools consensus %s > %s1.fasta" % (dirpath+baits, dirpath+folder[:-8] + '1.vcf.gz', folder[:-8])], shell=True, **quiet)
 				deinterleave_fasta(dirpath+folder[:-8] +'0.fasta', dirpath+folder[:-9]+'_0_Final.fasta')
 				deinterleave_fasta(dirpath+folder[:-8] +'1.fasta', dirpath+folder[:-9]+'_1_Final.fasta')
 				remove_if_exists(folder[:-8] + '0.fasta')
@@ -490,11 +500,11 @@ for folder in os.listdir(phaseset):
 				statfilename = folder[:-8] + "readstats.txt"
 				with open(os.path.join(phaseset + folder, statfilename), 'a+') as statfile:
 					statfile.write( folder[:-8] + " Read Statistics" + '\n')
-					subprocess.call(["samtools flagstat %s >> %s" % (bam, statfilename)], shell=True)
+					subprocess.call(["samtools flagstat %s >> %s" % (bam, statfilename)], shell=True, **quiet)
 					#get read depth
-					subprocess.call(["samtools depth -a %s | awk '{c++;s+=$3}END{print s/c}' >> %s" % (bam, statfilename)], shell=True)
+					subprocess.call(["samtools depth -a %s | awk '{c++;s+=$3}END{print s/c}' >> %s" % (bam, statfilename)], shell=True, **quiet)
 					#get Coverage
-					subprocess.call(["samtools depth -a %s | awk '{c++; if($3>0) total+=1}END{print (total/c)*100}' >> %s" % (bam, statfilename)], shell=True)
+					subprocess.call(["samtools depth -a %s | awk '{c++; if($3>0) total+=1}END{print (total/c)*100}' >> %s" % (bam, statfilename)], shell=True, **quiet)
 					statfile.close()
 
 
@@ -528,7 +538,7 @@ for folder in os.listdir(phaseset):
 		for file in os.listdir(path):
 			if file.endswith('_Final.fasta'):
 				os.chdir(phaseset+folder)
-				subprocess.call(["awk 'BEGIN{FS=\" \"}{if(!/>/){print toupper($0)}else{print $1}}' %s > %s_cap.fasta" % (file, file[:-6])], shell=True)
+				subprocess.call(["awk 'BEGIN{FS=\" \"}{if(!/>/){print toupper($0)}else{print $1}}' %s > %s_cap.fasta" % (file, file[:-6])], shell=True, **quiet)
 				run_usearch("-usearch_global %s -db %s -id 0.9 -top_hit_only -blast6out %s_hits.txt -strand plus" % (file[:-6]+'_cap.fasta', diploid_db, file[:-12]))
 
 
@@ -550,7 +560,8 @@ for folder in os.listdir(phaseset):
 						with open(folder[:-8] + '0_Final_cap.fasta', 'r') as phfinal:
 							for line in phfinal:
 								if splithits[0] in line:
-									print('Match ' +splithits[0] + ' in ' + splithits[1])
+									if args.verbose:
+										print('Match ' +splithits[0] + ' in ' + splithits[1])
 									with open(phaseset + 'diploidclusters_phased/'+ splithits2[0] + '_' + splithits2[1] +'__allsamples_allcontigs.fasta', 'a+') as baitcluster:
 										while True:
 											try:
@@ -566,7 +577,8 @@ for folder in os.listdir(phaseset):
 												baitcluster.write(seq)
 												break
 											except StopIteration as e:
-												print(e)
+												if args.verbose:
+													print(e)
 												break
 
 os.chdir(phaseset)
@@ -586,7 +598,8 @@ for folder in os.listdir(phaseset):
 						with open(folder[:-8] + '1_Final_cap.fasta', 'r') as phfinal:
 							for line in phfinal:
 								if splithits[0] in line:
-									print('Match splithits[0]= ' +splithits[0] + ' in ' + splithits[1])
+									if args.verbose:
+										print('Match splithits[0]= ' +splithits[0] + ' in ' + splithits[1])
 									with open(phaseset + 'diploidclusters_phased/'+ splithits2[0] + '_' + splithits2[1] +'__allsamples_allcontigs.fasta', 'a+') as baitcluster:
 										while True:
 											try:
@@ -602,7 +615,8 @@ for folder in os.listdir(phaseset):
 												baitcluster.write(seq)
 												break
 											except StopIteration as e:
-												print(e)
+												if args.verbose:
+													print(e)
 												break
 
 os.chdir(phaseset)
@@ -669,8 +683,8 @@ os.chdir(phaseset+'diploidclusters_phased/')
 for file in os.listdir(phaseset+'diploidclusters_phased/'):
 	if file.endswith('_duprem.fasta'):
 		#remove_dup(file, file[:-6] +'_duprem.fasta')
-		subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file[:-6])], shell=True)
-		subprocess.call(["trimal -in %s -out %s -gt %s" % (file[:-6] + "_al.fasta", file[:-6] + '_trimmed.fasta', args.indelrep)], shell=True)
+		subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file[:-6])], shell=True, **quiet)
+		subprocess.call(["trimal -in %s -out %s -gt %s" % (file[:-6] + "_al.fasta", file[:-6] + '_trimmed.fasta', args.indelrep)], shell=True, **quiet)
 		os.remove(file[:-6] + '_al.fasta')
 		os.remove(file)
 
@@ -781,14 +795,17 @@ def analyze_fasta_files(fasta_files, sample_names, output_csv):
     try:
         # Extract samples identifiers from sample names
         sample_ids = { '_'.join(name.split('_')[:2]): name for name in sample_names }
-        print("Sample IDs extracted: ", sample_ids)
+        if args.verbose:
+            print("Sample IDs extracted: ", sample_ids)
         #make dictionary to hold the unique count data
         data = {os.path.basename(fasta): {sample: set() for sample in sample_ids.keys()} for fasta in fasta_files}
-        print("Initialized data structure: ", data)
-        
+        if args.verbose:
+            print("Initialized data structure: ", data)
+
         for fasta_file in fasta_files:
             fasta_name = os.path.basename(fasta_file)
-            print(f"Processing file: {fasta_file}")
+            if args.verbose:
+                print(f"Processing file: {fasta_file}")
             # Read the FASTA file
             for record in SeqIO.parse(fasta_file, 'fasta'):
                 seq_id = record.id
@@ -821,16 +838,19 @@ def analyze_fasta_files(fasta_files, sample_names, output_csv):
         df.to_csv(output_csv, index=False)
     
     except Exception as e:
-        print(f"An error occurred: {e}")
+        if args.verbose:
+            print(f"An error occurred: {e}")
 
 os.chdir(phaseset+'diploidclusters_phased/')
 
 #Generate summary table of progenitor representation across all loci
 # Get FASTA file names
 fasta_files = [file for file in os.listdir(phaseset+'diploidclusters_phased/') if file.endswith("trimmed.fasta")]
-print(fasta_files)
+if args.verbose:
+	print(fasta_files)
 sample_names = [file for file in os.listdir(phaseset) if file.endswith("assembly")]
-print(sample_names)
+if args.verbose:
+	print(sample_names)
 output_csv = "progenitor_distributions.csv"
 
 os.chdir(phaseset+'diploidclusters_phased/')
@@ -841,14 +861,16 @@ def count_unique_strings_across_fasta(fasta_files, sample_names, output_csv):
     try:
         # Extract sample identifiers from sample names
         sample_ids = { '_'.join(name.split('_')[:2]): name for name in sample_names }
-        print("Sample IDs extracted: ", sample_ids)
-        
+        if args.verbose:
+            print("Sample IDs extracted: ", sample_ids)
+
         # make a dictionary to hold the unique count data
         data = {sample: [] for sample in sample_ids.keys()}
-        
+
         for fasta_file in fasta_files:
             fasta_name = os.path.basename(fasta_file)
-            print(f"Processing file: {fasta_file}")
+            if args.verbose:
+                print(f"Processing file: {fasta_file}")
             # Temporary dictionary for this FASTA file
             temp_data = {sample: set() for sample in sample_ids.keys()}
             
@@ -887,7 +909,8 @@ def count_unique_strings_across_fasta(fasta_files, sample_names, output_csv):
         df.to_csv(output_csv, index=False)
     
     except Exception as e:
-        print(f"An error occurred: {e}")
+        if args.verbose:
+            print(f"An error occurred: {e}")
 
 summary_csv = "progenitor_summary.csv"
 

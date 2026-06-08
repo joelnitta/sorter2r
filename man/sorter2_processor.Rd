@@ -18,7 +18,7 @@ sorter2_processor(
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   dry_run = FALSE,
-  echo = TRUE
+  verbose = 1L
 )
 }
 \arguments{
@@ -52,7 +52,9 @@ future update.}
 
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
 
-\item{echo}{If \code{TRUE}, print the command before running it.}
+\item{verbose}{Integer verbosity level. \code{1L} (default) shows Python-level
+section headers; \code{0L} is fully silent; \code{2L} echoes the command, enables
+per-item debug output (\code{-v}), and shows subprocess tool output.}
 }
 \value{
 Path to \code{output_dir} (for use with \code{tar_file()}).

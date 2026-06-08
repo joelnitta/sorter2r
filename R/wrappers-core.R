@@ -7,7 +7,9 @@
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
-#' @param echo If `TRUE`, print the command before running it.
+#' @param verbose Integer verbosity level. `1L` (default) shows Python-level
+#'   section headers; `0L` is fully silent; `2L` echoes the command, enables
+#'   per-item debug output (`-v`), and shows subprocess tool output.
 #' @return Path to `reads_dir` (for use with `tar_file()`).
 #' @export
 sorter2_format_reads <- function(
@@ -18,12 +20,13 @@ sorter2_format_reads <- function(
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   dry_run = FALSE,
-  echo = TRUE
+  verbose = 1L
 ) {
   input <- sorter2_require_file(input, "input")
   reads_dir <- sorter2_require_dir(reads_dir, "reads_dir")
 
   args <- c("-i", basename(input))
+  if (verbose >= 2L) args <- c(args, "-v")
   res <- sorter2_run(
     script = "SORTER2_FormatReads.py",
     args = args,
@@ -33,7 +36,8 @@ sorter2_format_reads <- function(
     script_dir = script_dir,
     working_dir = reads_dir,
     dry_run = dry_run,
-    echo = echo
+    echo = (verbose >= 2L),
+    show_output = (verbose >= 1L)
   )
   if (dry_run) return(invisible(res))
   reads_dir
@@ -55,7 +59,9 @@ sorter2_format_reads <- function(
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param overwrite If `TRUE`, delete `output_dir` before running.
 #' @param dry_run If `TRUE`, return the command without executing it.
-#' @param echo If `TRUE`, print the command before running it.
+#' @param verbose Integer verbosity level. `1L` (default) shows Python-level
+#'   section headers; `0L` is fully silent; `2L` echoes the command, enables
+#'   per-item debug output (`-v`), and shows subprocess tool output.
 #' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage1a <- function(
@@ -70,7 +76,7 @@ sorter2_stage1a <- function(
   script_dir = NULL,
   overwrite = FALSE,
   dry_run = FALSE,
-  echo = TRUE
+  verbose = 1L
 ) {
   reads_dir <- sorter2_require_dir(reads_dir, "reads_dir")
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
@@ -102,7 +108,8 @@ sorter2_stage1a <- function(
     script_dir = script_dir,
     working_dir = reads_dir,
     dry_run = dry_run,
-    echo = echo
+    echo = (verbose >= 2L),
+    show_output = (verbose >= 1L)
   )
   if (dry_run) return(invisible(res))
   output_dir
@@ -123,15 +130,15 @@ sorter2_stage1a <- function(
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
 #' @param idformat Identifier format.
-#' @param verbose If `TRUE`, pass `-v` to the Python script to print
-#'   per-item debug information during processing. Default `FALSE`.
+#' @param verbose Integer verbosity level. `1L` (default) shows Python-level
+#'   section headers; `0L` is fully silent; `2L` echoes the command, enables
+#'   per-item debug output (`-v`), and shows subprocess tool output.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param overwrite If `TRUE`, delete `output_dir` before running.
 #' @param dry_run If `TRUE`, return the command without executing it.
-#' @param echo If `TRUE`, print the command before running it.
 #' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage1b <- function(
@@ -146,14 +153,13 @@ sorter2_stage1b <- function(
   aliter = 1000,
   indelrep = 0.1,
   idformat = "onlysample",
-  verbose = FALSE,
+  verbose = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   overwrite = FALSE,
-  dry_run = FALSE,
-  echo = TRUE
+  dry_run = FALSE
 ) {
   input_dir <- sorter2_with_trailing_slash(input_dir)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
@@ -187,7 +193,7 @@ sorter2_stage1b <- function(
     "-idformat",
     as.character(idformat)
   )
-  if (isTRUE(verbose)) args <- c(args, "-v")
+  if (verbose >= 2L) args <- c(args, "-v")
 
   res <- sorter2_run(
     script = "SORTER2_Stage1B_AssembleOrthologs.py",
@@ -197,7 +203,8 @@ sorter2_stage1b <- function(
     conda = conda,
     script_dir = script_dir,
     dry_run = dry_run,
-    echo = echo
+    echo = (verbose >= 2L),
+    show_output = (verbose >= 1L)
   )
   if (dry_run) return(invisible(res))
   output_dir
@@ -218,15 +225,15 @@ sorter2_stage1b <- function(
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
 #' @param idformat Identifier format.
-#' @param verbose If `TRUE`, pass `-v` to the Python script to print
-#'   per-item debug information during processing. Default `FALSE`.
+#' @param verbose Integer verbosity level. `1L` (default) shows Python-level
+#'   section headers; `0L` is fully silent; `2L` echoes the command, enables
+#'   per-item debug output (`-v`), and shows subprocess tool output.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param overwrite If `TRUE`, delete `output_dir` before running.
 #' @param dry_run If `TRUE`, return the command without executing it.
-#' @param echo If `TRUE`, print the command before running it.
 #' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage2 <- function(
@@ -238,14 +245,13 @@ sorter2_stage2 <- function(
   aliter = 1000,
   indelrep = 0.1,
   idformat = "phase",
-  verbose = FALSE,
+  verbose = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   overwrite = FALSE,
-  dry_run = FALSE,
-  echo = TRUE
+  dry_run = FALSE
 ) {
   input_assemblies <- sorter2_with_trailing_slash(input_assemblies)
   input_clusters <- sorter2_with_trailing_slash(input_clusters)
@@ -276,7 +282,7 @@ sorter2_stage2 <- function(
     reads_dir <- sorter2_with_trailing_slash(reads_dir)
     args <- c(args, "-reads", reads_dir)
   }
-  if (isTRUE(verbose)) args <- c(args, "-v")
+  if (verbose >= 2L) args <- c(args, "-v")
 
   res <- sorter2_run(
     script = "SORTER2_Stage2_PhaseOrthologs.py",
@@ -286,7 +292,8 @@ sorter2_stage2 <- function(
     conda = conda,
     script_dir = script_dir,
     dry_run = dry_run,
-    echo = echo
+    echo = (verbose >= 2L),
+    show_output = (verbose >= 1L)
   )
   if (dry_run) return(invisible(res))
   output_dir
@@ -319,8 +326,9 @@ sorter2_stage2 <- function(
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
 #' @param filterundiff Logical flag for filtering undifferentiated loci.
-#' @param verbose If `TRUE`, pass `-v` to the Python script to print
-#'   per-item debug information during processing. Default `FALSE`.
+#' @param verbose Integer verbosity level. `1L` (default) shows Python-level
+#'   section headers; `0L` is fully silent; `2L` echoes the command, enables
+#'   per-item debug output (`-v`), and shows subprocess tool output.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
@@ -329,7 +337,6 @@ sorter2_stage2 <- function(
 #'   `phaseset/`) before re-running. When `phaseset_dir` is also set,
 #'   `phaseset/` is fully refreshed from the source.
 #' @param dry_run If `TRUE`, return the command without executing it.
-#' @param echo If `TRUE`, print the command before running it.
 #' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_stage3 <- function(
@@ -347,14 +354,13 @@ sorter2_stage3 <- function(
   aliter = 1000,
   indelrep = 0.1,
   filterundiff = FALSE,
-  verbose = FALSE,
+  verbose = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   overwrite = FALSE,
-  dry_run = FALSE,
-  echo = TRUE
+  dry_run = FALSE
 ) {
   input_phased <- sorter2_with_trailing_slash(input_phased)
   input_assemblies <- sorter2_with_trailing_slash(input_assemblies)
@@ -447,7 +453,7 @@ sorter2_stage3 <- function(
     reads_dir <- sorter2_with_trailing_slash(reads_dir)
     args <- c(args, "-reads", reads_dir)
   }
-  if (isTRUE(verbose)) args <- c(args, "-v")
+  if (verbose >= 2L) args <- c(args, "-v")
 
   res <- sorter2_run(
     script = "SORTER2_Stage3_PhaseHybrids.py",
@@ -457,7 +463,8 @@ sorter2_stage3 <- function(
     conda = conda,
     script_dir = script_dir,
     dry_run = dry_run,
-    echo = echo
+    echo = (verbose >= 2L),
+    show_output = (verbose >= 1L)
   )
   if (dry_run) return(invisible(res))
   output_dir
@@ -482,7 +489,9 @@ sorter2_stage3 <- function(
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
 #' @param dry_run If `TRUE`, return the command without executing it.
-#' @param echo If `TRUE`, print the command before running it.
+#' @param verbose Integer verbosity level. `1L` (default) shows Python-level
+#'   section headers; `0L` is fully silent; `2L` echoes the command, enables
+#'   per-item debug output (`-v`), and shows subprocess tool output.
 #' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
 sorter2_processor <- function(
@@ -499,7 +508,7 @@ sorter2_processor <- function(
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   dry_run = FALSE,
-  echo = TRUE
+  verbose = 1L
 ) {
   input_dir <- sorter2_with_trailing_slash(input_dir)
   output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
@@ -523,6 +532,8 @@ sorter2_processor <- function(
     sorter2_bool_flag(dovcf)
   )
 
+  if (verbose >= 2L) args <- c(args, "-v")
+
   res <- sorter2_run(
     script = "SORTER2_Processor.py",
     args = args,
@@ -531,7 +542,8 @@ sorter2_processor <- function(
     conda = conda,
     script_dir = script_dir,
     dry_run = dry_run,
-    echo = echo
+    echo = (verbose >= 2L),
+    show_output = (verbose >= 1L)
   )
   if (dry_run) return(invisible(res))
   output_dir

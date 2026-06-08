@@ -19,14 +19,13 @@ sorter2_stage3(
   aliter = 1000,
   indelrep = 0.1,
   filterundiff = FALSE,
-  verbose = FALSE,
+  verbose = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
   script_dir = NULL,
   overwrite = FALSE,
-  dry_run = FALSE,
-  echo = TRUE
+  dry_run = FALSE
 )
 }
 \arguments{
@@ -69,8 +68,9 @@ output (\verb{*_R1_val_1.fq}) inside each \verb{phaseset/*_assembly/} subdirecto
 
 \item{filterundiff}{Logical flag for filtering undifferentiated loci.}
 
-\item{verbose}{If \code{TRUE}, pass \code{-v} to the Python script to print
-per-item debug information during processing. Default \code{FALSE}.}
+\item{verbose}{Integer verbosity level. \code{1L} (default) shows Python-level
+section headers; \code{0L} is fully silent; \code{2L} echoes the command, enables
+per-item debug output (\code{-v}), and shows subprocess tool output.}
 
 \item{python}{Python executable to use.}
 
@@ -85,8 +85,6 @@ per-item debug information during processing. Default \code{FALSE}.}
 \verb{phaseset/} is fully refreshed from the source.}
 
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
-
-\item{echo}{If \code{TRUE}, print the command before running it.}
 }
 \value{
 Path to \code{output_dir} (for use with \code{tar_file()}).

@@ -18,13 +18,13 @@ from Bio import SeqIO
 def run_usearch(cmd):
     cwd = os.getcwd()
     if shutil.which('usearch'):
-        subprocess.call('usearch ' + cmd, shell=True)
+        subprocess.call('usearch ' + cmd, shell=True, **quiet)
     elif shutil.which('docker'):
         docker_cmd = (
             'docker run --rm -v %s:%s -w %s '
             'joelnitta/usearch:latest %s' % (cwd, cwd, cwd, cmd)
         )
-        subprocess.call(docker_cmd, shell=True)
+        subprocess.call(docker_cmd, shell=True, **quiet)
     else:
         sys.exit(
             'Error: usearch not found. Install usearch locally or install '
@@ -49,6 +49,9 @@ parser.add_argument(
     help="Print debug information during processing"
 )
 args = parser.parse_args()
+quiet = {} if args.verbose else {
+    "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL
+}
 
 assemblydir = args.assemblydir if args.assemblydir.endswith('/') else args.assemblydir + '/'
 clusterdir = args.clusterdir if args.clusterdir.endswith('/') else args.clusterdir + '/'
@@ -75,9 +78,11 @@ def check_folder(directory, folder_name):
 	folder_path = os.path.join(directory, folder_name)
 	if not os.path.exists(folder_path):
 		os.makedirs(folder_path)
-		print("Created folder: " + folder_path)
+		if args.verbose:
+			print("Created folder: " + folder_path)
 	else:
-		print("Folder already exists: " + folder_path)
+		if args.verbose:
+			print("Folder already exists: " + folder_path)
 
 folders_to_check = ["diploids_phased"]
 
@@ -154,7 +159,8 @@ for file in os.listdir(diploidclusters):
 	if file.endswith('_'):
 		newfilename = workdipclusters + file + 'degap.fasta'
 		inpath = diploidclusters + file
-		print('degapping ' + file)
+		if args.verbose:
+			print('degapping ' + file)
 		with open(newfilename, "w") as o:
 			for record in SeqIO.parse(inpath, "fasta"):
 				record.seq = record.seq.replace("-", "")
@@ -166,7 +172,8 @@ for file in os.listdir(workdipclusters):
 	if file.endswith('degap.fasta'):
 		src = workdipclusters + file
 		dst = workdipclusters + file[:-11] + 'deinterleaved_degap.fasta'
-		print("deinterleaving " + file)
+		if args.verbose:
+			print("deinterleaving " + file)
 		deinterleave_fasta(src, dst)
 		os.remove(src)
 
@@ -178,7 +185,7 @@ for file in os.listdir(workdipclusters):
 
 #make ublast data
 os.chdir(workdipclusters)
-subprocess.call("cat *degap.fasta > ALLsamples_allcontigs_allbaits_clusterannotated.fasta", shell=True)
+subprocess.call("cat *degap.fasta > ALLsamples_allcontigs_allbaits_clusterannotated.fasta", shell=True, **quiet)
 run_usearch("-makeudb_usearch ALLsamples_allcontigs_allbaits_clusterannotated.fasta -output diploid_master.udb")
 
 print('Preparing Phase Directories...')
@@ -212,7 +219,8 @@ for file in os.listdir(workdipclusters):
 										print(line)
 									break
 								except StopIteration as e:
-									print(e)
+									if args.verbose:
+										print(e)
 									break
 
 os.chdir(assemblydir)
@@ -250,40 +258,41 @@ for folder in direc:
 				prefix = wf_folder + sample_base
 				if args.verbose:
 					print(read_path)
-					print(R2_path)
-				subprocess.call(["bwa index %s" % (baits_path)], shell=True)
+					if args.verbose:
+						print(R2_path)
+				subprocess.call(["bwa index %s" % (baits_path)], shell=True, **quiet)
 				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (
-					baits_path, read_path, R2_path, prefix)], shell=True)
+					baits_path, read_path, R2_path, prefix)], shell=True, **quiet)
 				subprocess.call(["samtools sort %smapreads.sam -o %smapreads.bam" % (
-					prefix, prefix)], shell=True)
-				subprocess.call(["samtools index %s" % (prefix + 'mapreads.bam')], shell=True)
+					prefix, prefix)], shell=True, **quiet)
+				subprocess.call(["samtools index %s" % (prefix + 'mapreads.bam')], shell=True, **quiet)
 				subprocess.call(["samtools phase -A -Q %s -b %s %s" % (
-					args.phasequal, prefix, prefix + 'mapreads.bam')], shell=True)
+					args.phasequal, prefix, prefix + 'mapreads.bam')], shell=True, **quiet)
 				subprocess.call(["samtools sort %s -o %s" % (
-					prefix + '.0.bam', prefix + '0srt.bam')], shell=True)
+					prefix + '.0.bam', prefix + '0srt.bam')], shell=True, **quiet)
 				subprocess.call(["samtools sort %s -o %s" % (
-					prefix + '.1.bam', prefix + '1srt.bam')], shell=True)
+					prefix + '.1.bam', prefix + '1srt.bam')], shell=True, **quiet)
 				subprocess.call(["samtools sort %s -o %s" % (
-					prefix + '.chimera.bam', prefix + 'chimerasrt.bam')], shell=True)
+					prefix + '.chimera.bam', prefix + 'chimerasrt.bam')], shell=True, **quiet)
 				subprocess.call([
 					"bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
 					"| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
-					baits_path, prefix + '0srt.bam', prefix + '0.vcf.gz')], shell=True)
+					baits_path, prefix + '0srt.bam', prefix + '0.vcf.gz')], shell=True, **quiet)
 				subprocess.call([
 					"bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
 					"| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
-					baits_path, prefix + '1srt.bam', prefix + '1.vcf.gz')], shell=True)
+					baits_path, prefix + '1srt.bam', prefix + '1.vcf.gz')], shell=True, **quiet)
 				subprocess.call([
 					"bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
 					"| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
-					baits_path, prefix + 'chimerasrt.bam', prefix + 'chimera.vcf.gz')], shell=True)
-				subprocess.call(["bcftools index %s" % (prefix + '0.vcf.gz')], shell=True)
-				subprocess.call(["bcftools index %s" % (prefix + '1.vcf.gz')], shell=True)
-				subprocess.call(["bcftools index %s" % (prefix + 'chimera.vcf.gz')], shell=True)
+					baits_path, prefix + 'chimerasrt.bam', prefix + 'chimera.vcf.gz')], shell=True, **quiet)
+				subprocess.call(["bcftools index %s" % (prefix + '0.vcf.gz')], shell=True, **quiet)
+				subprocess.call(["bcftools index %s" % (prefix + '1.vcf.gz')], shell=True, **quiet)
+				subprocess.call(["bcftools index %s" % (prefix + 'chimera.vcf.gz')], shell=True, **quiet)
 				subprocess.call(["cat %s | bcftools consensus %s > %s0_Final.fasta" % (
-					baits_path, prefix + '0.vcf.gz', prefix)], shell=True)
+					baits_path, prefix + '0.vcf.gz', prefix)], shell=True, **quiet)
 				subprocess.call(["cat %s | bcftools consensus %s > %s1_Final.fasta" % (
-					baits_path, prefix + '1.vcf.gz', prefix)], shell=True)
+					baits_path, prefix + '1.vcf.gz', prefix)], shell=True, **quiet)
 				remove_if_exists(prefix + 'mapreads.sam')
 				remove_if_exists(prefix + '.0.bam')
 				remove_if_exists(prefix + '0srt.bam')
@@ -300,13 +309,13 @@ for folder in direc:
 				stat_path = wf_folder + folder[:-8] + 'readstats.txt'
 				with open(stat_path, 'a+') as statfile:
 					statfile.write(folder[:-8] + " Read Statistics\n")
-					subprocess.call(["samtools flagstat %s >> %s" % (bam, stat_path)], shell=True)
+					subprocess.call(["samtools flagstat %s >> %s" % (bam, stat_path)], shell=True, **quiet)
 					subprocess.call([
 						"samtools depth -a %s | awk '{c++;s+=$3}END{print s/c}' >> %s" % (
-						bam, stat_path)], shell=True)
+						bam, stat_path)], shell=True, **quiet)
 					subprocess.call([
 						"samtools depth -a %s | awk '{c++; if($3>0) total+=1}END{print (total/c)*100}' >> %s" % (
-						bam, stat_path)], shell=True)
+						bam, stat_path)], shell=True, **quiet)
 					statfile.close()
 
 
@@ -351,7 +360,7 @@ for folder in direc:
 		wf_folder = workfilesdir + folder + '/'
 		os.chdir(wf_folder)
 		subprocess.call(["cat *_Final.fasta > %sallcontigs_allclusterbaits_contigs_phased.fasta" % (
-			folder[:-8])], shell=True)
+			folder[:-8])], shell=True, **quiet)
 
 #Move Phased allcontigs_allbaits files to phasedir
 for folder in direc:
@@ -385,7 +394,7 @@ for folder in map_contigs_to_baits_dir:
 os.chdir(phasedir)
 
 #concatenated phased sequences for all samples
-subprocess.call(["cat *_allcontigs_allclusterbaits_contigs_phased.fasta  > ALLsamples_allcontigs_allbaitclusters_contigs_phased.fasta"], shell=True)
+subprocess.call(["cat *_allcontigs_allclusterbaits_contigs_phased.fasta  > ALLsamples_allcontigs_allbaitclusters_contigs_phased.fasta"], shell=True, **quiet)
 
 #filling in the dictionary
 input_fasta = SeqIO.parse("ALLsamples_allcontigs_allbaitclusters_contigs_phased.fasta", "fasta")
@@ -403,7 +412,8 @@ for folder in map_contigs_to_baits_dir:
 				folder = record.id.split('_', 4)[2] + '_' + record.id.split('_', 4)[3] + '_' + phase
 				if args.verbose:
 					print(record.id.split('_', 4)[3])
-					print(folder)
+					if args.verbose:
+						print(folder)
 				seq = record.seq
 				DICT2[baitcluster][folder].append(seq)
 
@@ -463,13 +473,14 @@ for file in os.listdir(phasedir):
 
 for file in os.listdir(phasedir):
 	if file.endswith('_duprem.fasta'):
-		subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file[:-6])], shell=True)
-		subprocess.call(["trimal -in %s -out %s -gt %s" % (file[:-6] + "_al.fasta", file[:-6] + '_trimmed.fasta', args.indelrep)], shell=True)
+		subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file[:-6])], shell=True, **quiet)
+		subprocess.call(["trimal -in %s -out %s -gt %s" % (file[:-6] + "_al.fasta", file[:-6] + '_trimmed.fasta', args.indelrep)], shell=True, **quiet)
 
 #deinterleave
 for file in os.listdir(phasedir):
 	if 'trimmed' in file:
-		print("deinterleaving " + file)
+		if args.verbose:
+			print("deinterleaving " + file)
 		deinterleave_fasta(file, file[:-6] + '_final.fasta')
 		os.remove(file)
 
@@ -503,7 +514,8 @@ for samp in os.listdir(workfilesdir):
 									statint = statinta.strip('\n')
 									if args.verbose:
 										print(statlabel)
-										print(statint)
+										if args.verbose:
+											print(statint)
 									HETDICT[ind][statlabel] = []
 									HETDICT[ind][statlabel].append(int(statint))
 								else:

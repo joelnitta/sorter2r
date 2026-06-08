@@ -11,7 +11,14 @@ parser.add_argument("-spades", "--spades", required=True, help='Run Spades Assem
 parser.add_argument("-trim", "--trim", required=True, help='Run Trim Galore? (T/F)')
 parser.add_argument("-clean_tmp", "--clean_tmp", default='F',
                     help='Delete SPAdes K-mer graph dirs after each sample? (T/F)')
+parser.add_argument(
+    "-v", "--verbose", action="store_true", default=False,
+    help="Print debug information during processing"
+)
 args = parser.parse_args()
+quiet = {} if args.verbose else {
+    "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL
+}
 
 
 def _clean_kmer_dirs(spades_out):
@@ -40,7 +47,8 @@ if args.trim == 'T':
 			filefolder=file.split('_')[0]+'_'+file.split('_')[1]+'_assembly'
 			readst= dst + filefolder + '/'
 			os.makedirs(os.path.join(readst))
-			print('Moving ' + file + ' to: \n' + readst)
+			if args.verbose:
+				print('Moving ' + file + ' to: \n' + readst)
 			R1_old_path = os.path.join(rootwd, file)
 			R1_new_path = os.path.join(readst, file)
 			R2_old_path = os.path.join(rootwd, file.replace('_R1.','_R2.'))
@@ -48,7 +56,7 @@ if args.trim == 'T':
 			os.renames(R1_old_path, R1_new_path)
 			os.renames(R2_old_path, R2_new_path)
 			os.chdir(readst)
-			subprocess.run(["trim_galore --quality 20 --length 30 --paired --fastqc %s %s" % (file, file.replace('_R1.','_R2.'))], shell=True)
+			subprocess.run(["trim_galore --quality 20 --length 30 --paired --fastqc %s %s" % (file, file.replace('_R1.','_R2.'))], shell=True, **quiet)
 			os.remove(file)
 			os.remove(file.replace('_R1.','_R2.'))
 			os.chdir(rootwd)
@@ -66,7 +74,7 @@ if args.spades == 'T':
 				for read in os.listdir(dst + file):
 					if 'R1_val_1.fq' in read:
 						R2 = read[:-11] + 'R2_val_2.fq'
-						subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (read, R2)], shell=True)
+						subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (read, R2)], shell=True, **quiet)
 						if args.clean_tmp == 'T':
 							_clean_kmer_dirs('spades_hybrid_assembly')
 						os.chdir(dst)
@@ -84,7 +92,7 @@ if args.spades == 'T':
 				R1 = os.path.join(rootwd, file)
 				R2 = os.path.join(rootwd, file.replace('_R1.','_R2.'))
 				os.chdir(readst)
-				subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (R1, R2)], shell=True)
+				subprocess.call(["spades.py --only-assembler -1 %s -2 %s -o spades_hybrid_assembly" % (R1, R2)], shell=True, **quiet)
 				if args.clean_tmp == 'T':
 					_clean_kmer_dirs('spades_hybrid_assembly')
 				os.chdir(rootwd)

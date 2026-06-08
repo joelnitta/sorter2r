@@ -18,13 +18,13 @@ from Bio import SeqIO
 def run_usearch(cmd):
     cwd = os.getcwd()
     if shutil.which('usearch'):
-        subprocess.call('usearch ' + cmd, shell=True)
+        subprocess.call('usearch ' + cmd, shell=True, **quiet)
     elif shutil.which('docker'):
         docker_cmd = (
             'docker run --rm -v %s:%s -w %s '
             'joelnitta/usearch:latest %s' % (cwd, cwd, cwd, cmd)
         )
-        subprocess.call(docker_cmd, shell=True)
+        subprocess.call(docker_cmd, shell=True, **quiet)
     else:
         sys.exit(
             'Error: usearch not found. Install usearch locally or install '
@@ -49,6 +49,9 @@ parser.add_argument(
     help="Print debug information during processing"
 )
 args = parser.parse_args()
+quiet = {} if args.verbose else {
+    "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL
+}
 
 outdir = args.outputdir if args.outputdir.endswith('/') else args.outputdir + '/'
 os.makedirs(outdir, exist_ok=True)
@@ -75,9 +78,11 @@ def check_folder(directory, folder_name):
 	if not os.path.exists(folder_path):
 		# Create the folder if it does not exist
 		os.makedirs(folder_path)
-		print("Created folder: " + folder_path)
+		if args.verbose:
+			print("Created folder: " + folder_path)
 	else:
-		print("Folder already exists: " + folder_path)
+		if args.verbose:
+			print("Folder already exists: " + folder_path)
 
 folders_to_check = ["diploidclusters", "diploids"]
 
@@ -187,14 +192,15 @@ if args.recluster == 'T':
 		if 'assembly' in folder:
 			wf_folder = workfilesdir + folder + '/'
 			os.chdir(wf_folder)
-			subprocess.call(["cat *_cons.fa  > %s_allcontigs_allbaits_contigs.fasta" % (folder[:-9])], shell=True)
+			subprocess.call(["cat *_cons.fa  > %s_allcontigs_allbaits_contigs.fasta" % (folder[:-9])], shell=True, **quiet)
 
 	os.chdir(args.workingdir)
 
 	#Move allcontigs_allbaits files to contigdir 'diploids/' directory
 	for folder in direc:
 		if 'assembly' in folder:
-			print('Moving ' + folder + ' contigs to /diploids/ directory')
+			if args.verbose:
+				print('Moving ' + folder + ' contigs to /diploids/ directory')
 			wf_folder = workfilesdir + folder + '/'
 			for file in os.listdir(wf_folder):
 				if file.endswith('_allcontigs_allbaits_contigs.fasta'):
@@ -222,7 +228,7 @@ if args.recluster == 'T':
 
 	#print(DICT)
 
-	subprocess.call("cat *_ > ALLsamples_allcontigs_allbaits_contigs.fasta", shell=True)
+	subprocess.call("cat *_ > ALLsamples_allcontigs_allbaits_contigs.fasta", shell=True, **quiet)
 
 	#filling in the dictionary with a list of one or more contig sequences for each bait and each sample
 	input_fasta=SeqIO.parse("ALLsamples_allcontigs_allbaits_contigs.fasta", "fasta")
@@ -324,8 +330,8 @@ if args.recluster == 'T':
 
 	for file in os.listdir(contigdir):
 		if file.endswith('duprem'):
-			subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file)], shell=True)
-			subprocess.call(["trimal -in %s_al.fasta -out %s_trimmed -gt %s" % (file, file, args.indelrep)], shell=True)
+			subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file)], shell=True, **quiet)
+			subprocess.call(["trimal -in %s_al.fasta -out %s_trimmed -gt %s" % (file, file, args.indelrep)], shell=True, **quiet)
 			os.remove(file +"_al.fasta")
 			os.remove(file)
 
@@ -334,7 +340,8 @@ if args.recluster == 'T':
 
 	for file in os.listdir(contigdir):
 		if 'duprem_trimmed' in file:
-			print("deinterleaving " + file)
+			if args.verbose:
+				print("deinterleaving " + file)
 			deinterleave_fasta(file,file+'_deint.fasta')
 			os.remove(file)
 
@@ -373,7 +380,7 @@ if args.recluster == 'T':
 
 	os.chdir(diploidclusters)
 
-	subprocess.call(["cat *_  > ALLsamples_allcontigs_allbaitclusters_contigs.fasta"], shell=True)
+	subprocess.call(["cat *_  > ALLsamples_allcontigs_allbaitclusters_contigs.fasta"], shell=True, **quiet)
 
 	# #filling in the dictionary with a list of one or more contig sequences for each bait and each sample
 	input_fasta=SeqIO.parse("ALLsamples_allcontigs_allbaitclusters_contigs.fasta", "fasta")
@@ -469,7 +476,7 @@ else:
 	os.chdir(args.workingdir)
 
 	#make bwa index of consensusbaits
-	subprocess.call(["bwa index %s" % (args.refdir)], shell=True)
+	subprocess.call(["bwa index %s" % (args.refdir)], shell=True, **quiet)
 
 	#map contigs to consensus baits; write all outputs to workfilesdir
 
@@ -486,11 +493,11 @@ else:
 							conscontig = args.refdir
 							contigmap = filepath + contig
 							subprocess.call(["bwa mem -V %s %s > %s_contigmap.sam" % (
-								conscontig, contigmap, wf_folder + folder)], shell=True)
+								conscontig, contigmap, wf_folder + folder)], shell=True, **quiet)
 							subprocess.call(["samtools view -S -F 4 %s_contigmap.sam | "
 								"awk -v OFS='\\t' '{print \">\" $3\"_\" \"\\n \" $10}' "
 								"> %s_contigmap.fa" % (
-								wf_folder + folder, wf_folder + folder)], shell=True)
+								wf_folder + folder, wf_folder + folder)], shell=True, **quiet)
 							os.remove(wf_folder + folder + '_contigmap.sam')
 
 
@@ -525,7 +532,8 @@ else:
 													#print seq
 													break
 												except StopIteration as e:
-													print(e)
+													if args.verbose:
+														print(e)
 													break
 
 
@@ -564,7 +572,7 @@ else:
 					extract_longest_sequences(filepath, args.contignum)
 					#Remove sequences shorter than user defined length
 					subprocess.call(["seqtk seq -L %s %slongest.fa > %slongestfiltered.fa" % (
-						args.contiglen, filepath, filepath)], shell=True)
+						args.contiglen, filepath, filepath)], shell=True, **quiet)
 					os.remove(filepath + 'longest.fa')
 
 	os.chdir(args.workingdir)
@@ -608,7 +616,8 @@ else:
 			wf_folder = workfilesdir + folder + '/'
 			for filename in os.listdir(wf_folder):
 				if filename.endswith("_"):
-					print('deleting: ' + filename)
+					if args.verbose:
+						print('deleting: ' + filename)
 					os.remove(wf_folder + filename)
 
 	os.chdir(args.workingdir)
@@ -618,7 +627,8 @@ else:
 			wf_folder = workfilesdir + folder + '/'
 			for filename in os.listdir(wf_folder):
 				if filename.endswith("_longest.fa"):
-					print('deleting: ' + filename)
+					if args.verbose:
+						print('deleting: ' + filename)
 					os.remove(wf_folder + filename)
 
 
@@ -654,14 +664,15 @@ else:
 		if 'assembly' in folder:
 			wf_folder = workfilesdir + folder + '/'
 			os.chdir(wf_folder)
-			subprocess.call(["cat *_cons.fa  > %s_allcontigs_allbaits_contigs.fasta" % (folder[:-9])], shell=True)
+			subprocess.call(["cat *_cons.fa  > %s_allcontigs_allbaits_contigs.fasta" % (folder[:-9])], shell=True, **quiet)
 
 	os.chdir(args.workingdir)
 
 	#Move allcontigs_allbaits files to contigdir 'diploids/' directory
 	for folder in direc:
 		if 'assembly' in folder:
-			print('Moving ' + folder + ' contigs to /diploids/ directory')
+			if args.verbose:
+				print('Moving ' + folder + ' contigs to /diploids/ directory')
 			wf_folder = workfilesdir + folder + '/'
 			for filename in os.listdir(wf_folder):
 				if filename.endswith('_allcontigs_allbaits_contigs.fasta'):
@@ -691,7 +702,7 @@ else:
 				DICT[bait][folder]=[]
 
 
-	subprocess.call("cat *_ > ALLsamples_allcontigs_allbaits_contigs.fasta", shell=True)
+	subprocess.call("cat *_ > ALLsamples_allcontigs_allbaits_contigs.fasta", shell=True, **quiet)
 
 	#filling in the dictionary with a list of one or more contig sequences for each bait and each sample
 	input_fasta=SeqIO.parse("ALLsamples_allcontigs_allbaits_contigs.fasta", "fasta")
@@ -806,8 +817,8 @@ else:
 
 	for file in os.listdir(contigdir):
 		if file.endswith('duprem'):
-			subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file)], shell=True)
-			subprocess.call(["trimal -in %s_al.fasta -out %s_trimmed -gt %s" % (file, file, args.indelrep)], shell=True)
+			subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file)], shell=True, **quiet)
+			subprocess.call(["trimal -in %s_al.fasta -out %s_trimmed -gt %s" % (file, file, args.indelrep)], shell=True, **quiet)
 			#os.remove(file +"_al.fasta")
 			os.remove(file)
 
@@ -816,7 +827,8 @@ else:
 
 	for file in os.listdir(contigdir):
 		if file.endswith('duprem_trimmed'):
-			print("deinterleaving " + file)
+			if args.verbose:
+				print("deinterleaving " + file)
 			deinterleave_fasta(file,file+'_deint.fasta')
 			os.remove(file)
 
@@ -853,7 +865,7 @@ else:
 
 	os.chdir(diploidclusters)
 
-	subprocess.call(["cat *_  > ALLsamples_allcontigs_allbaitclusters_contigs.fasta"], shell=True)
+	subprocess.call(["cat *_  > ALLsamples_allcontigs_allbaitclusters_contigs.fasta"], shell=True, **quiet)
 
 	#filling in the dictionary with a list of one or more contig sequences for each bait and each sample
 	input_fasta=SeqIO.parse("ALLsamples_allcontigs_allbaitclusters_contigs.fasta", "fasta")

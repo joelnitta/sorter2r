@@ -13,7 +13,8 @@ sorter2_run(
   script_dir = NULL,
   working_dir = NULL,
   dry_run = FALSE,
-  echo = TRUE,
+  echo = FALSE,
+  show_output = TRUE,
   success_codes = 0L
 )
 }
@@ -36,6 +37,9 @@ with \verb{conda run -n conda_env}.}
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
 
 \item{echo}{If \code{TRUE}, print the command before running it.}
+
+\item{show_output}{If \code{TRUE} (default), stream script stdout/stderr as
+R \code{message()} calls. Set to \code{FALSE} for completely silent execution.}
 
 \item{success_codes}{Integer vector of exit codes treated as success.
 Defaults to \code{0L}. Use \code{c(0L, 1L)} for scripts that exit with 1 on success.}

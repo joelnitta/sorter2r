@@ -138,6 +138,8 @@ sorter2_check_overwrite <- function(path, overwrite) {
 #' @param working_dir Optional working directory for the command.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param echo If `TRUE`, print the command before running it.
+#' @param show_output If `TRUE` (default), stream script stdout/stderr as
+#'   R `message()` calls. Set to `FALSE` for completely silent execution.
 #' @param success_codes Integer vector of exit codes treated as success.
 #'   Defaults to `0L`. Use `c(0L, 1L)` for scripts that exit with 1 on success.
 #' @return `invisible(NULL)`. Stops with an error on non-zero exit.
@@ -151,7 +153,8 @@ sorter2_run <- function(
   script_dir = NULL,
   working_dir = NULL,
   dry_run = FALSE,
-  echo = TRUE,
+  echo = FALSE,
+  show_output = TRUE,
   success_codes = 0L
 ) {
   if (is.null(script_dir)) {
@@ -229,14 +232,18 @@ sorter2_run <- function(
       read_lines_safe(function() p$read_output_lines()) else character(0)
     err_lines <- if (ready[["error"]] == "ready")
       read_lines_safe(function() p$read_error_lines()) else character(0)
-    for (l in out_lines) message(l)
-    for (l in err_lines) message(l)
+    if (show_output) {
+      for (l in out_lines) message(l)
+      for (l in err_lines) message(l)
+    }
     if (ready[["output"]] == "closed" && ready[["error"]] == "closed") break
     # conda run sometimes holds pipes open after the child exits; break once
     # the process is dead and a full poll cycle yields no new output.
     if (!p$is_alive() && length(out_lines) == 0L && length(err_lines) == 0L) {
-      for (l in read_lines_safe(function() p$read_output_lines())) message(l)
-      for (l in read_lines_safe(function() p$read_error_lines())) message(l)
+      if (show_output) {
+        for (l in read_lines_safe(function() p$read_output_lines())) message(l)
+        for (l in read_lines_safe(function() p$read_error_lines())) message(l)
+      }
       break
     }
   }
