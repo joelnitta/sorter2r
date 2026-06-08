@@ -225,6 +225,8 @@ sorter2_stage1b <- function(
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
 #' @param idformat Identifier format.
+#' @param threads Number of parallel worker processes for per-sample phasing
+#'   and per-locus alignment. Default `1L` (serial).
 #' @param verbose Integer verbosity level. `1L` (default) shows Python-level
 #'   section headers; `0L` is fully silent; `2L` echoes the command, enables
 #'   per-item debug output (`-v`), and shows subprocess tool output.
@@ -245,6 +247,7 @@ sorter2_stage2 <- function(
   aliter = 1000,
   indelrep = 0.1,
   idformat = "phase",
+  threads = 1L,
   verbose = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
@@ -275,7 +278,9 @@ sorter2_stage2 <- function(
     "-indel",
     as.character(indelrep),
     "-idformat",
-    as.character(idformat)
+    as.character(idformat),
+    "-t",
+    as.character(as.integer(threads))
   )
 
   if (!is.null(reads_dir)) {

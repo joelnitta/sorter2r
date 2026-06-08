@@ -13,6 +13,7 @@ from shutil import move
 from shutil import copyfile
 import Bio
 from Bio import SeqIO
+from concurrent.futures import ProcessPoolExecutor
 
 
 def run_usearch(cmd):
@@ -44,6 +45,10 @@ parser.add_argument("-idformat", "--idformat")
 # without Trim Galore (trim=F).  When omitted, reads are expected inside
 # each *_assembly/ subdirectory as *_R1_val_1.fq / *_R2_val_2.fq.
 parser.add_argument("-reads", "--readsdir", default=None)
+parser.add_argument(
+    "-t", "--threads", type=int, default=1,
+    help="Number of parallel worker processes for per-sample phasing"
+)
 parser.add_argument(
     "-v", "--verbose", action="store_true", default=False,
     help="Print debug information during processing"
@@ -226,97 +231,100 @@ for file in os.listdir(workdipclusters):
 os.chdir(assemblydir)
 
 
+def _map_sample(folder):
+    """Per-sample read mapping, phasing, and variant calling worker."""
+    wf_folder = workfilesdir + folder + '/'
+    asm_folder = assemblydir + folder + '/'
+    for baits in os.listdir(wf_folder):
+        if baits.endswith('allcontigs_allclusterbaits_annotated.fasta'):
+            baits_path = wf_folder + baits
+            sample_base = folder[:-8]  # e.g. 'Iimura18_cthysanostomum_'
+            # Prefer Trim Galore output inside the assembly dir;
+            # fall back to raw FASTQ files in readsdir when trim=F.
+            trimmed_R1 = asm_folder + sample_base + 'R1_val_1.fq'
+            trimmed_R2 = asm_folder + sample_base + 'R2_val_2.fq'
+            if os.path.exists(trimmed_R1):
+                read_path = trimmed_R1
+                R2_path = trimmed_R2
+            elif readsdir is not None:
+                raw_base = sample_base.rstrip('_')
+                read_path = readsdir + raw_base + '_R1.fastq'
+                R2_path = readsdir + raw_base + '_R2.fastq'
+                if not os.path.exists(read_path):
+                    raise RuntimeError('reads not found for %s. '
+                        'Checked %s and %s' % (folder, trimmed_R1, read_path))
+            else:
+                raise RuntimeError('reads not found: %s. '
+                    'Pass -reads to specify a raw FASTQ directory '
+                    'when Stage 1A was run without Trim Galore.' % trimmed_R1)
+            prefix = wf_folder + sample_base
+            if args.verbose:
+                print(read_path)
+                print(R2_path)
+            subprocess.call(["bwa index %s" % (baits_path)], shell=True, **quiet)
+            subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (
+                baits_path, read_path, R2_path, prefix)], shell=True, **quiet)
+            subprocess.call(["samtools sort %smapreads.sam -o %smapreads.bam" % (
+                prefix, prefix)], shell=True, **quiet)
+            subprocess.call(["samtools index %s" % (prefix + 'mapreads.bam')], shell=True, **quiet)
+            subprocess.call(["samtools phase -A -Q %s -b %s %s" % (
+                args.phasequal, prefix, prefix + 'mapreads.bam')], shell=True, **quiet)
+            subprocess.call(["samtools sort %s -o %s" % (
+                prefix + '.0.bam', prefix + '0srt.bam')], shell=True, **quiet)
+            subprocess.call(["samtools sort %s -o %s" % (
+                prefix + '.1.bam', prefix + '1srt.bam')], shell=True, **quiet)
+            subprocess.call(["samtools sort %s -o %s" % (
+                prefix + '.chimera.bam', prefix + 'chimerasrt.bam')], shell=True, **quiet)
+            subprocess.call([
+                "bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
+                "| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
+                baits_path, prefix + '0srt.bam', prefix + '0.vcf.gz')], shell=True, **quiet)
+            subprocess.call([
+                "bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
+                "| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
+                baits_path, prefix + '1srt.bam', prefix + '1.vcf.gz')], shell=True, **quiet)
+            subprocess.call([
+                "bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
+                "| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
+                baits_path, prefix + 'chimerasrt.bam', prefix + 'chimera.vcf.gz')], shell=True, **quiet)
+            subprocess.call(["bcftools index %s" % (prefix + '0.vcf.gz')], shell=True, **quiet)
+            subprocess.call(["bcftools index %s" % (prefix + '1.vcf.gz')], shell=True, **quiet)
+            subprocess.call(["bcftools index %s" % (prefix + 'chimera.vcf.gz')], shell=True, **quiet)
+            subprocess.call(["cat %s | bcftools consensus %s > %s0_Final.fasta" % (
+                baits_path, prefix + '0.vcf.gz', prefix)], shell=True, **quiet)
+            subprocess.call(["cat %s | bcftools consensus %s > %s1_Final.fasta" % (
+                baits_path, prefix + '1.vcf.gz', prefix)], shell=True, **quiet)
+            remove_if_exists(prefix + 'mapreads.sam')
+            remove_if_exists(prefix + '.0.bam')
+            remove_if_exists(prefix + '0srt.bam')
+            remove_if_exists(prefix + '0.vcf.gz')
+            remove_if_exists(prefix + '0.vcf.gz.csi')
+            remove_if_exists(prefix + '.1.bam')
+            remove_if_exists(prefix + '1srt.bam')
+            remove_if_exists(prefix + '1.vcf.gz')
+            remove_if_exists(prefix + '1.vcf.gz.csi')
+            remove_if_exists(prefix + '.chimera.bam')
+            remove_if_exists(prefix + 'chimerasrt.bam')
+            bam = prefix + 'mapreads.bam'
+            stat_path = wf_folder + folder[:-8] + 'readstats.txt'
+            with open(stat_path, 'a+') as statfile:
+                statfile.write(folder[:-8] + " Read Statistics\n")
+                subprocess.call(["samtools flagstat %s >> %s" % (bam, stat_path)], shell=True, **quiet)
+                subprocess.call([
+                    "samtools depth -a %s | awk '{c++;s+=$3}END{print s/c}' >> %s" % (
+                    bam, stat_path)], shell=True, **quiet)
+                subprocess.call([
+                    "samtools depth -a %s | awk '{c++; if($3>0) total+=1}END{print (total/c)*100}' >> %s" % (
+                    bam, stat_path)], shell=True, **quiet)
+                statfile.close()
+
+
 #Map reads to consensus allele references, phase bi-allelic haplotypes.
 #Reads (FASTQ, bwa index) come from assemblydir (Stage 1A, read-only).
 #All outputs (BAM, VCF, Final.fasta, readstats) go to workfilesdir.
-for folder in direc:
-	if 'assembly' in folder:
-		wf_folder = workfilesdir + folder + '/'
-		asm_folder = assemblydir + folder + '/'
-		for baits in os.listdir(wf_folder):
-			if baits.endswith('allcontigs_allclusterbaits_annotated.fasta'):
-				baits_path = wf_folder + baits
-				sample_base = folder[:-8]  # e.g. 'Iimura18_cthysanostomum_'
-				# Prefer Trim Galore output inside the assembly dir;
-				# fall back to raw FASTQ files in readsdir when trim=F.
-				trimmed_R1 = asm_folder + sample_base + 'R1_val_1.fq'
-				trimmed_R2 = asm_folder + sample_base + 'R2_val_2.fq'
-				if os.path.exists(trimmed_R1):
-					read_path = trimmed_R1
-					R2_path = trimmed_R2
-				elif readsdir is not None:
-					raw_base = sample_base.rstrip('_')
-					read_path = readsdir + raw_base + '_R1.fastq'
-					R2_path = readsdir + raw_base + '_R2.fastq'
-					if not os.path.exists(read_path):
-						sys.exit('Error: reads not found for %s. '
-							'Checked %s and %s' % (folder, trimmed_R1, read_path))
-				else:
-					sys.exit('Error: reads not found: %s. '
-						'Pass -reads to specify a raw FASTQ directory '
-						'when Stage 1A was run without Trim Galore.' % trimmed_R1)
-				prefix = wf_folder + sample_base
-				if args.verbose:
-					print(read_path)
-					if args.verbose:
-						print(R2_path)
-				subprocess.call(["bwa index %s" % (baits_path)], shell=True, **quiet)
-				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (
-					baits_path, read_path, R2_path, prefix)], shell=True, **quiet)
-				subprocess.call(["samtools sort %smapreads.sam -o %smapreads.bam" % (
-					prefix, prefix)], shell=True, **quiet)
-				subprocess.call(["samtools index %s" % (prefix + 'mapreads.bam')], shell=True, **quiet)
-				subprocess.call(["samtools phase -A -Q %s -b %s %s" % (
-					args.phasequal, prefix, prefix + 'mapreads.bam')], shell=True, **quiet)
-				subprocess.call(["samtools sort %s -o %s" % (
-					prefix + '.0.bam', prefix + '0srt.bam')], shell=True, **quiet)
-				subprocess.call(["samtools sort %s -o %s" % (
-					prefix + '.1.bam', prefix + '1srt.bam')], shell=True, **quiet)
-				subprocess.call(["samtools sort %s -o %s" % (
-					prefix + '.chimera.bam', prefix + 'chimerasrt.bam')], shell=True, **quiet)
-				subprocess.call([
-					"bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
-					"| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
-					baits_path, prefix + '0srt.bam', prefix + '0.vcf.gz')], shell=True, **quiet)
-				subprocess.call([
-					"bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
-					"| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
-					baits_path, prefix + '1srt.bam', prefix + '1.vcf.gz')], shell=True, **quiet)
-				subprocess.call([
-					"bcftools mpileup -B --min-BQ 20 -Ou -d 500 -f %s %s "
-					"| bcftools call -mv --ploidy 1 -Oz -p .0001 -o %s" % (
-					baits_path, prefix + 'chimerasrt.bam', prefix + 'chimera.vcf.gz')], shell=True, **quiet)
-				subprocess.call(["bcftools index %s" % (prefix + '0.vcf.gz')], shell=True, **quiet)
-				subprocess.call(["bcftools index %s" % (prefix + '1.vcf.gz')], shell=True, **quiet)
-				subprocess.call(["bcftools index %s" % (prefix + 'chimera.vcf.gz')], shell=True, **quiet)
-				subprocess.call(["cat %s | bcftools consensus %s > %s0_Final.fasta" % (
-					baits_path, prefix + '0.vcf.gz', prefix)], shell=True, **quiet)
-				subprocess.call(["cat %s | bcftools consensus %s > %s1_Final.fasta" % (
-					baits_path, prefix + '1.vcf.gz', prefix)], shell=True, **quiet)
-				remove_if_exists(prefix + 'mapreads.sam')
-				remove_if_exists(prefix + '.0.bam')
-				remove_if_exists(prefix + '0srt.bam')
-				remove_if_exists(prefix + '0.vcf.gz')
-				remove_if_exists(prefix + '0.vcf.gz.csi')
-				remove_if_exists(prefix + '.1.bam')
-				remove_if_exists(prefix + '1srt.bam')
-				remove_if_exists(prefix + '1.vcf.gz')
-				remove_if_exists(prefix + '1.vcf.gz.csi')
-				remove_if_exists(prefix + '.chimera.bam')
-				remove_if_exists(prefix + 'chimerasrt.bam')
-				#generate read statistics text file
-				bam = prefix + 'mapreads.bam'
-				stat_path = wf_folder + folder[:-8] + 'readstats.txt'
-				with open(stat_path, 'a+') as statfile:
-					statfile.write(folder[:-8] + " Read Statistics\n")
-					subprocess.call(["samtools flagstat %s >> %s" % (bam, stat_path)], shell=True, **quiet)
-					subprocess.call([
-						"samtools depth -a %s | awk '{c++;s+=$3}END{print s/c}' >> %s" % (
-						bam, stat_path)], shell=True, **quiet)
-					subprocess.call([
-						"samtools depth -a %s | awk '{c++; if($3>0) total+=1}END{print (total/c)*100}' >> %s" % (
-						bam, stat_path)], shell=True, **quiet)
-					statfile.close()
+sample_folders = [f for f in direc if 'assembly' in f]
+with ProcessPoolExecutor(max_workers=args.threads) as pool:
+    list(pool.map(_map_sample, sample_folders))
 
 
 os.chdir(assemblydir)
@@ -358,9 +366,12 @@ for folder in direc:
 for folder in direc:
 	if 'assembly' in folder:
 		wf_folder = workfilesdir + folder + '/'
-		os.chdir(wf_folder)
-		subprocess.call(["cat *_Final.fasta > %sallcontigs_allclusterbaits_contigs_phased.fasta" % (
-			folder[:-8])], shell=True, **quiet)
+		finals = glob.glob(wf_folder + '*_Final.fasta')
+		subprocess.call(
+			"cat %s > %s" % (
+				' '.join(finals),
+				wf_folder + folder[:-8] + 'allcontigs_allclusterbaits_contigs_phased.fasta'),
+			shell=True, **quiet)
 
 #Move Phased allcontigs_allbaits files to phasedir
 for folder in direc:
@@ -471,10 +482,25 @@ for file in os.listdir(phasedir):
 	if file.endswith('allsamples_allcontigs.fasta'):
 		remove_dup(file, file[:-6] + '_duprem.fasta')
 
-for file in os.listdir(phasedir):
-	if file.endswith('_duprem.fasta'):
-		subprocess.call(["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (args.aliter, file, file[:-6])], shell=True, **quiet)
-		subprocess.call(["trimal -in %s -out %s -gt %s" % (file[:-6] + "_al.fasta", file[:-6] + '_trimmed.fasta', args.indelrep)], shell=True, **quiet)
+def _align_locus(file_path):
+    """Per-locus alignment and trimming worker."""
+    base = file_path[:-6]  # strip .fasta
+    subprocess.call(
+        ["mafft --globalpair --maxiterate %s %s > %s_al.fasta" % (
+            args.aliter, file_path, base)],
+        shell=True, **quiet)
+    subprocess.call(
+        ["trimal -in %s -out %s -gt %s" % (
+            base + "_al.fasta", base + '_trimmed.fasta', args.indelrep)],
+        shell=True, **quiet)
+
+duprem_files = [
+    os.path.join(phasedir, f)
+    for f in os.listdir(phasedir)
+    if f.endswith('_duprem.fasta')
+]
+with ProcessPoolExecutor(max_workers=args.threads) as pool:
+    list(pool.map(_align_locus, duprem_files))
 
 #deinterleave
 for file in os.listdir(phasedir):

@@ -13,6 +13,7 @@ sorter2_stage2(
   aliter = 1000,
   indelrep = 0.1,
   idformat = "phase",
+  threads = 1L,
   verbose = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
@@ -43,6 +44,9 @@ output (\verb{*_R1_val_1.fq}) inside each \verb{*_assembly/} subdirectory.}
 \item{indelrep}{Indel representation threshold.}
 
 \item{idformat}{Identifier format.}
+
+\item{threads}{Number of parallel worker processes for per-sample phasing
+and per-locus alignment. Default \code{1L} (serial).}
 
 \item{verbose}{Integer verbosity level. \code{1L} (default) shows Python-level
 section headers; \code{0L} is fully silent; \code{2L} echoes the command, enables
