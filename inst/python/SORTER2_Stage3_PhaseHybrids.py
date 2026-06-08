@@ -74,7 +74,7 @@ phaseset=outdir + 'phaseset/'
 baitid1= ["L%d_" % x for x in range(int(args.locinum))]
 baitid= ["L%d" % x for x in range(int(args.locinum))]
 diploidclusters=phaseddir + 'diploids_phased/'
-diploid_db = phaseddir + 'diploids_phased/diploid_master.udb'
+diploid_db = outdir + 'diploid_master.udb'
 
 
 def remove_if_exists(path):
@@ -206,7 +206,7 @@ for folder in os.listdir(phaseset):
 os.chdir(diploidclusters)
 
 #make ublast data
-run_usearch("-makeudb_usearch ALLsamples_allcontigs_allbaitclusters_contigs_phased.fasta -output diploid_master.udb")
+run_usearch("-makeudb_usearch ALLsamples_allcontigs_allbaitclusters_contigs_phased.fasta -output %s" % diploid_db)
 
 #Map Contigs to Rereferences
 os.chdir(phaseset)
