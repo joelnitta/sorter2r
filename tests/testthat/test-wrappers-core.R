@@ -131,8 +131,7 @@ test_that("wrapper dry-runs build expected command arguments", {
     input = input_file,
     reads_dir = reads_dir,
     script_dir = script_dir,
-    dry_run = TRUE,
-    echo = FALSE
+    dry_run = TRUE
   )
   expect_match(format_res$command, "SORTER2_FormatReads.py")
   expect_match(format_res$command, basename(input_file))
@@ -141,8 +140,7 @@ test_that("wrapper dry-runs build expected command arguments", {
     reads_dir = reads_dir,
     output_dir = output_dir,
     script_dir = script_dir,
-    dry_run = TRUE,
-    echo = FALSE
+    dry_run = TRUE
   )
   expect_match(stage1a_res$command, "SORTER2_Stage1A_TrimSPAdes.py")
   expect_match(stage1a_res$command, "'-o'")
@@ -155,8 +153,7 @@ test_that("wrapper dry-runs build expected command arguments", {
     ref = ref_file,
     loci = 10,
     script_dir = script_dir,
-    dry_run = TRUE,
-    echo = FALSE
+    dry_run = TRUE
   )
   expect_match(stage1b_res$command, "SORTER2_Stage1B_AssembleOrthologs.py")
   expect_match(stage1b_res$command, "'-wd'")
@@ -169,8 +166,7 @@ test_that("wrapper dry-runs build expected command arguments", {
     input_clusters = input_dir,
     output_dir = output_dir,
     script_dir = script_dir,
-    dry_run = TRUE,
-    echo = FALSE
+    dry_run = TRUE
   )
   expect_match(stage2_res$command, "SORTER2_Stage2_PhaseOrthologs.py")
   expect_match(stage2_res$command, "'-wa'")
@@ -184,8 +180,7 @@ test_that("wrapper dry-runs build expected command arguments", {
     ref              = ref_file,
     loci             = 10,
     script_dir       = script_dir,
-    dry_run          = TRUE,
-    echo             = FALSE
+    dry_run          = TRUE
   )
   expect_match(stage3_res$command, "SORTER2_Stage3_PhaseHybrids.py")
   expect_match(stage3_res$command, "'-outdir'")
@@ -195,8 +190,7 @@ test_that("wrapper dry-runs build expected command arguments", {
     input_dir = input_dir,
     output_dir = output_dir,
     script_dir = script_dir,
-    dry_run = TRUE,
-    echo = FALSE
+    dry_run = TRUE
   )
   expect_match(processor_res$command, "SORTER2_Processor.py")
   expect_match(processor_res$command, "'-outdir'")
@@ -217,8 +211,7 @@ test_that("wrapper dry-runs can use a conda environment", {
     output_dir = output_dir,
     conda_env = "sorter2",
     script_dir = script_dir,
-    dry_run = TRUE,
-    echo = FALSE
+    dry_run = TRUE
   )
 
   expect_match(stage1a_res$command, "conda")
