@@ -572,7 +572,7 @@ with open(outdir + 'readstats.csv', 'w') as outfile:
 	statlist = list(HETDICT.values())
 	stats = statlist[0].keys()
 	for ind in HETDICT.keys():
-		writer.writerow([ind] + [HETDICT[ind][stat] for stat in stats])
+		writer.writerow([ind] + [HETDICT[ind].get(stat, '') for stat in stats])
 
 with open(outdir + 'readstats.csv', 'r') as infile:
 	with open(outdir + 'readstats_fin.csv', 'w') as outfile:
