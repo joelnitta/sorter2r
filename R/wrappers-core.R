@@ -307,6 +307,10 @@ sorter2_stage2 <- function(
 #' @param hybrid_samples Optional character vector of sample base names (e.g.
 #'   `"Iimura46_cgrande"`) used to filter which `*_assembly/` dirs are copied
 #'   from `phaseset_dir`. When `NULL`, all `*_assembly/` dirs are copied.
+#' @param reads_dir Optional directory containing raw FASTQ files
+#'   (`*_R1.fastq` / `*_R2.fastq`). Required when Stage 1A was run with
+#'   `trim = FALSE`. When `NULL` (the default), Stage3 expects Trim Galore
+#'   output (`*_R1_val_1.fq`) inside each `phaseset/*_assembly/` subdirectory.
 #' @param ref Reference file path.
 #' @param loci Number of loci to process.
 #' @param contigscafnum Contig/scaffold count threshold.
@@ -334,6 +338,7 @@ sorter2_stage3 <- function(
   output_dir,
   phaseset_dir = NULL,
   hybrid_samples = NULL,
+  reads_dir = NULL,
   ref,
   loci,
   contigscafnum = 20,
@@ -438,6 +443,10 @@ sorter2_stage3 <- function(
     "-fp",
     sorter2_bool_flag(filterundiff)
   )
+  if (!is.null(reads_dir)) {
+    reads_dir <- sorter2_with_trailing_slash(reads_dir)
+    args <- c(args, "-reads", reads_dir)
+  }
   if (isTRUE(verbose)) args <- c(args, "-v")
 
   res <- sorter2_run(

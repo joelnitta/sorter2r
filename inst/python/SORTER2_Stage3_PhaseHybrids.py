@@ -50,6 +50,7 @@ parser.add_argument("-pq", "--phasequal")
 parser.add_argument("-al", "--aliter")
 parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-fp", "--filterundiff")
+parser.add_argument("-reads", "--readsdir", default=None)
 parser.add_argument(
     "-v", "--verbose", action="store_true", default=False,
     help="Print debug information during processing"
@@ -60,6 +61,9 @@ args = parser.parse_args()
 phaseddir = args.phaseddir if args.phaseddir.endswith('/') else args.phaseddir + '/'
 # assemblydir: Stage 1A output dir — contains *_assembly/ dirs for diploid samples
 assemblydir = args.assemblydir if args.assemblydir.endswith('/') else args.assemblydir + '/'
+readsdir = args.readsdir
+if readsdir is not None and not readsdir.endswith('/'):
+    readsdir = readsdir + '/'
 outdir = args.outputdir if args.outputdir else phaseddir
 outdir = outdir if outdir.endswith('/') else outdir + '/'
 os.makedirs(outdir, exist_ok=True)
@@ -416,17 +420,34 @@ for folder in os.listdir(phaseset):
 		os.chdir(phaseset + folder)
 		for baits in os.listdir(phaseset + folder):
 			if baits.endswith('final.fasta'):
-				read = folder[:-8] + 'R1_val_1.fq'
-				if args.verbose:
-					print(read)
-				R2 = folder[:-8] + 'R2_val_2.fq'
-				if args.verbose:
-					print(R2)
-				if args.verbose:
-					print(baits)
 				dirpath = phaseset + folder + '/'
+				sample_base = folder[:-8]  # e.g. 'Iimura423_cthysanostomum_'
+				trimmed_R1 = dirpath + sample_base + 'R1_val_1.fq'
+				trimmed_R2 = dirpath + sample_base + 'R2_val_2.fq'
+				if os.path.exists(trimmed_R1):
+					read_path = trimmed_R1
+					R2_path = trimmed_R2
+				elif readsdir is not None:
+					raw_base = sample_base.rstrip('_')
+					read_path = readsdir + raw_base + '_R1.fastq'
+					R2_path = readsdir + raw_base + '_R2.fastq'
+					if not os.path.exists(read_path):
+						sys.exit(
+							'Error: reads not found for %s. '
+							'Checked %s and %s' % (
+								folder, trimmed_R1, read_path))
+				else:
+					sys.exit(
+						'Error: reads not found: %s. '
+						'Pass -reads to specify a raw FASTQ directory '
+						'when Stage 1A was run without Trim Galore.'
+						% trimmed_R1)
+				if args.verbose:
+					print(read_path)
+					print(R2_path)
+					print(baits)
 				subprocess.call(["bwa index %s" % (baits)], shell=True)
-				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (dirpath+baits, dirpath+read, dirpath+R2, folder[:-8])], shell=True)
+				subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (dirpath+baits, read_path, R2_path, folder[:-8])], shell=True)
 				subprocess.call(["samtools sort %smapreads.sam -o %s" % (dirpath+folder[:-8], dirpath+folder[:-8] + 'mapreads.bam')], shell=True)
 				subprocess.call(["samtools index  %s" % (dirpath+folder[:-8] + 'mapreads.bam')], shell=True)
 				subprocess.call(["samtools phase -A -Q %s -b %s %s" % (args.phasequal, dirpath+folder[:-8], dirpath+folder[:-8] + 'mapreads.bam')], shell=True)
