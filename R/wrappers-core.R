@@ -481,8 +481,6 @@ sorter2_stage3 <- function(
 #'   (`diploids/`, `diploidclusters/`, and optionally `diploids_phased/` and
 #'   `phaseset/`).
 #' @param output_dir Directory where processed results will be written.
-#'   Currently must equal `input_dir`; full separation will be supported in a
-#'   future update.
 #' @param repfilt Repeat filter threshold.
 #' @param majorclusters Number of major clusters.
 #' @param keepal Logical flag for keeping alignments.

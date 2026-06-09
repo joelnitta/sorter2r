@@ -59,38 +59,30 @@ def count_sequences_in_fasta(fasta_file):
     return count
 
 #Filter based on sample representation
-def filter_fasta(fasta_dir, threshold):
-    # Calculate the required number of sequences for the threshold
-    
+def filter_fasta(fasta_dir, threshold, out_dir):
     fl = float(threshold)
     required_count = float(samplenum * fl)
     print(f"Required count: {required_count}")
 
-    # Create the output directory
-    output_dir = os.path.join(fasta_dir, f"{int(fl * 100)}rep")
+    # Write into out_dir, not fasta_dir, to preserve read-only input
+    output_dir = os.path.join(out_dir, f"{int(fl * 100)}rep")
     os.makedirs(output_dir, exist_ok=True)
 
-    # Process each FASTA file in the directory
     for fasta_file in os.listdir(fasta_dir):
         if fasta_file.endswith("_al.fasta"):
             fasta_path = os.path.join(fasta_dir, fasta_file)
-            
-            # Count the sequences in the FASTA file
             seq_count = count_sequences_in_fasta(fasta_path)
-            print(f"File: {fasta_file}, Sequence count: {seq_count}, Required seqs: {required_count}")
-
-            # Check if the number of sequences meets the threshold
+            print(f"File: {fasta_file}, Sequence count: {seq_count}, "
+                  f"Required seqs: {required_count}")
             if int(seq_count) >= int(required_count):
                 shutil.copy(fasta_path, output_dir)
 
-os.chdir(diploidclusters)
-
 # filter based on sample representation
-filter_fasta(diploidclusters, args.repfilt)
+filter_fasta(diploidclusters, args.repfilt, outdir)
 
 filtfl= float(args.repfilt)
 filtstr=f"{int(filtfl * 100)}rep"
-filtdir=diploidclusters+filtstr
+filtdir=outdir+filtstr
 
 os.chdir(filtdir)
 
@@ -122,7 +114,7 @@ def get_sequence_count(fasta_file):
 def filter_clusters_by_sequence_count(input_dir, num_clusters_to_keep):
 	"""Keeps only the top N clusters with the highest number of sequences for each locus."""
 	odir='MajorClusters_'+num_clusters_to_keep
-	os.makedirs(odir)
+	os.makedirs(odir, exist_ok=True)
 	numkeep=int(num_clusters_to_keep)
 	# Dictionary to store cluster info
 	loci_clusters = defaultdict(list)
@@ -375,4 +367,4 @@ if args.dovcf == 'T':
 			os.remove(file)
 
 else:
-	sys.exit('SORTER2VCF Filtered alignments and generated consensus sequence references for filtered loci, skipped read mapping and vcf')
+	print('SORTER2VCF Filtered alignments and generated consensus sequence references for filtered loci, skipped read mapping and vcf')
