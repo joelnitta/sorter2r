@@ -48,17 +48,34 @@ if args.readsdir is not None:
         else args.readsdir + '/'
     )
 
-# All HaplOMiner writes go under outdir — never into workingdir.
+# Final outputs go inside outdir; intermediate workfiles go in a sibling
+# directory so they are not hashed by {targets} when tracking outdir.
+# e.g. outdir = .../haplominer/ → workfilesdir = .../haplominer_workfiles/
+_outdir_base = outdir.rstrip('/')
+workfilesdir = (
+    os.path.join(
+        os.path.dirname(_outdir_base),
+        os.path.basename(_outdir_base) + '_workfiles'
+    ) + '/'
+)
 cpdir = outdir + 'all_chloroplasts/'
-workfilesdir = outdir + 'haplominer_workfiles/'
 os.makedirs(cpdir, exist_ok=True)
 os.makedirs(workfilesdir, exist_ok=True)
 
+# Remove legacy workfiles directory that older versions wrote inside outdir,
+# so it no longer inflates the {targets} hash of outdir.
+_legacy_wf = outdir + 'haplominer_workfiles/'
+if os.path.isdir(_legacy_wf):
+    shutil.rmtree(_legacy_wf)
+
 cpref = args.cpref
 
+# Only index if not already done — avoids re-writing index files on each run.
 print('HaplOMiner: indexing organellar reference')
-subprocess.call(["bwa index %s" % cpref], shell=True, **quiet)
-subprocess.call(["samtools faidx %s" % cpref], shell=True, **quiet)
+if not os.path.exists(cpref + '.bwt'):
+    subprocess.call(["bwa index %s" % cpref], shell=True, **quiet)
+if not os.path.exists(cpref + '.fai'):
+    subprocess.call(["samtools faidx %s" % cpref], shell=True, **quiet)
 
 
 def _process_sample(folder):
@@ -120,14 +137,14 @@ def _process_sample(folder):
         ["samtools depth -a %smapreads.bam "
          "| awk '{c++;s+=$3}END{if(c>0)print s/c; else print 0}'"
          " >> %s" % (prefix, stat_path)],
-        shell=True
+        shell=True, stderr=subprocess.DEVNULL
     )
     subprocess.call(
         ["samtools depth -a %smapreads.bam "
          "| awk '{c++; if($3>0) total+=1}"
          "END{if(c>0)print (total/c)*100; else print 0}'"
          " >> %s" % (prefix, stat_path)],
-        shell=True
+        shell=True, stderr=subprocess.DEVNULL
     )
 
     # Count mapped reads before attempting consensus generation.
