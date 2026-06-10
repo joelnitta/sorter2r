@@ -11,6 +11,7 @@ sorter2_haplominer(
   coverage = 50,
   depth = 5,
   reads_dir = NULL,
+  threads = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -40,6 +41,9 @@ value are excluded from the final alignment.}
 \code{trim = FALSE}. When \code{NULL} (the default), Hapl-O-Miner expects
 Trim Galore output (\verb{*_R1_val_1.fq}) inside each \verb{*_assembly/}
 subdirectory.}
+
+\item{threads}{Number of parallel worker processes for per-sample
+mapping. Default \code{1L} (serial).}
 
 \item{python}{Python executable to use.}
 

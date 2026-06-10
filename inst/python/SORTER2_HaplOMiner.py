@@ -4,6 +4,7 @@ import csv
 import argparse
 import os
 import shutil
+from concurrent.futures import ProcessPoolExecutor
 
 
 parser = argparse.ArgumentParser()
@@ -16,6 +17,10 @@ parser.add_argument("-d", "--depth", type=float)
 # without Trim Galore (trim=F).  When omitted, reads are expected inside
 # each *_assembly/ subdirectory as *_R1_val_1.fq / *_R2_val_2.fq.
 parser.add_argument("-reads", "--readsdir", default=None)
+parser.add_argument(
+    "-t", "--threads", type=int, default=1,
+    help="Number of parallel worker processes for per-sample mapping"
+)
 parser.add_argument(
     "-v", "--verbose", action="store_true", default=False,
     help="Print debug information during processing"
@@ -55,10 +60,9 @@ print('HaplOMiner: indexing organellar reference')
 subprocess.call(["bwa index %s" % cpref], shell=True, **quiet)
 subprocess.call(["samtools faidx %s" % cpref], shell=True, **quiet)
 
-# Map reads and generate per-sample consensus.
-for folder in sorted(os.listdir(workingdir)):
-    if not folder.endswith('_assembly'):
-        continue
+
+def _process_sample(folder):
+    """Per-sample read mapping, stats, and consensus generation worker."""
     asm_folder = workingdir + folder + '/'
     sample_base = folder[:-8]  # e.g. 'Iimura12_cthysanostomum_'
     raw_base = sample_base.rstrip('_')  # e.g. 'Iimura12_cthysanostomum'
@@ -169,6 +173,14 @@ for folder in sorted(os.listdir(workingdir)):
 
     if os.path.exists(prefix + 'mapreads.sam'):
         os.remove(prefix + 'mapreads.sam')
+
+
+# Map reads and generate per-sample consensus (parallelised).
+sample_folders = sorted(
+    f for f in os.listdir(workingdir) if f.endswith('_assembly')
+)
+with ProcessPoolExecutor(max_workers=args.threads) as pool:
+    list(pool.map(_process_sample, sample_folders))
 
 # Compile read statistics into readstats_cp.csv.
 STATDICT = {}
