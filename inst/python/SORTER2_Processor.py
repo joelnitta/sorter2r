@@ -26,7 +26,15 @@ parser.add_argument("-al", "--keepal")
 parser.add_argument("-st2", "--stage2")
 parser.add_argument("-st3", "--stage3")
 parser.add_argument("-dovcf", "--dovcf")
+parser.add_argument(
+    "-v", "--verbose", action="store_true", default=False,
+    help="Print debug information during processing"
+)
 args = parser.parse_args()
+
+quiet = {} if args.verbose else {
+    "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL
+}
 
 outdir = args.outputdir if args.outputdir else args.workingdir
 outdir = outdir if outdir.endswith('/') else outdir + '/'
@@ -62,7 +70,8 @@ def count_sequences_in_fasta(fasta_file):
 def filter_fasta(fasta_dir, threshold, out_dir):
     fl = float(threshold)
     required_count = float(samplenum * fl)
-    print(f"Required count: {required_count}")
+    if args.verbose:
+        print(f"Required count: {required_count}")
 
     # Write into out_dir, not fasta_dir, to preserve read-only input
     output_dir = os.path.join(out_dir, f"{int(fl * 100)}rep")
@@ -72,8 +81,9 @@ def filter_fasta(fasta_dir, threshold, out_dir):
         if fasta_file.endswith("_al.fasta"):
             fasta_path = os.path.join(fasta_dir, fasta_file)
             seq_count = count_sequences_in_fasta(fasta_path)
-            print(f"File: {fasta_file}, Sequence count: {seq_count}, "
-                  f"Required seqs: {required_count}")
+            if args.verbose:
+                print(f"File: {fasta_file}, Sequence count: {seq_count}, "
+                      f"Required seqs: {required_count}")
             if int(seq_count) >= int(required_count):
                 shutil.copy(fasta_path, output_dir)
 
@@ -90,7 +100,8 @@ if args.keepal == 'T':
 
 	os.chdir(filtdir)
 
-	print("Renaming filtered alignment sequence IDs to >ID_species")
+	if args.verbose:
+		print("Renaming filtered alignment sequence IDs to >ID_species")
 	for file in os.listdir(filtdir):
 		if file.endswith('al.fasta'):
 			with open(file, 'r') as infile:
@@ -166,7 +177,7 @@ outputcount=count_files_in_folder(clustdir)
 #Loop to generate consensus references from phased alignments in diploids folder
 for align in os.listdir(clustdir):
 	if align.endswith('duprem_al.fasta'):
-		subprocess.call(["cons %s %sconsensus_reference.fasta" % (align, align[:-15])], shell=True)
+		subprocess.call(["cons %s %sconsensus_reference.fasta" % (align, align[:-15])], shell=True, **quiet)
 
 #loop throught consensus-references and give them locus cluster reference label
 for refc in os.listdir(clustdir):
