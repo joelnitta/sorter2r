@@ -12,6 +12,7 @@ sorter2_haplominer(
   depth = 5,
   reads_dir = NULL,
   threads = 1L,
+  clean_workfiles = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -44,6 +45,12 @@ subdirectory.}
 
 \item{threads}{Number of parallel worker processes for per-sample
 mapping. Default \code{1L} (serial).}
+
+\item{clean_workfiles}{If \code{TRUE}, delete the intermediate workfiles
+directory (BAMs, raw consensus FASTAs, per-sample stat files) after
+the run completes. Saves substantial disk space; the compiled
+\code{readstats_cp.csv} and final consensus FASTAs are unaffected.
+Default \code{FALSE}.}
 
 \item{python}{Python executable to use.}
 

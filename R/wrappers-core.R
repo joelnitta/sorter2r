@@ -500,6 +500,11 @@ sorter2_stage3 <- function(
 #'   subdirectory.
 #' @param threads Number of parallel worker processes for per-sample
 #'   mapping. Default `1L` (serial).
+#' @param clean_workfiles If `TRUE`, delete the intermediate workfiles
+#'   directory (BAMs, raw consensus FASTAs, per-sample stat files) after
+#'   the run completes. Saves substantial disk space; the compiled
+#'   `readstats_cp.csv` and final consensus FASTAs are unaffected.
+#'   Default `FALSE`.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
@@ -518,6 +523,7 @@ sorter2_haplominer <- function(
   depth = 5,
   reads_dir = NULL,
   threads = 1L,
+  clean_workfiles = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -544,7 +550,9 @@ sorter2_haplominer <- function(
     "-d",
     as.character(as.numeric(depth)),
     "-t",
-    as.character(as.integer(threads))
+    as.character(as.integer(threads)),
+    "-clean_workfiles",
+    sorter2_bool_flag(clean_workfiles)
   )
 
   if (!is.null(reads_dir)) {

@@ -22,6 +22,10 @@ parser.add_argument(
     help="Number of parallel worker processes for per-sample mapping"
 )
 parser.add_argument(
+    "-clean_workfiles", "--clean_workfiles", default='F',
+    help="Delete intermediate workfiles directory after run (T/F)"
+)
+parser.add_argument(
     "-v", "--verbose", action="store_true", default=False,
     help="Print debug information during processing"
 )
@@ -301,5 +305,8 @@ if passing_samples:
         ['mafft --auto %s > %s' % (all_fasta, al_fasta)],
         shell=True, **quiet
     )
+
+if args.clean_workfiles == 'T' and os.path.isdir(workfilesdir):
+    shutil.rmtree(workfilesdir)
 
 print('HaplOMiner complete. Results in: %s' % outdir)
