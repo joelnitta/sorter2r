@@ -475,6 +475,94 @@ sorter2_stage3 <- function(
   output_dir
 }
 
+#' Run the SORTER2 Hapl-O-Miner step
+#'
+#' Mines haploid organellar genomes (e.g. chloroplast) from off-target
+#' by-catch reads in a SORTER2 Stage 1A dataset.  Reads from each
+#' `*_assembly/` subdirectory are mapped to a user-supplied haploid
+#' organellar reference; per-sample consensus sequences are generated
+#' and filtered by minimum coverage and read-depth thresholds.
+#'
+#' @param input_dir Directory containing Stage 1A `*_assembly/`
+#'   subdirectories.
+#' @param output_dir Directory where all Hapl-O-Miner output will be
+#'   written.
+#' @param organellar_ref Path to the haploid organellar reference FASTA
+#'   (e.g. a chloroplast genome).
+#' @param coverage Minimum reference coverage percentage threshold.
+#'   Samples below this value are excluded from the final alignment.
+#' @param depth Minimum mean read-depth threshold.  Samples below this
+#'   value are excluded from the final alignment.
+#' @param reads_dir Optional directory containing raw FASTQ files
+#'   (`*_R1.fastq` / `*_R2.fastq`). Required when Stage 1A was run with
+#'   `trim = FALSE`. When `NULL` (the default), Hapl-O-Miner expects
+#'   Trim Galore output (`*_R1_val_1.fq`) inside each `*_assembly/`
+#'   subdirectory.
+#' @param python Python executable to use.
+#' @param conda_env Optional conda environment name.
+#' @param conda Conda executable to use when `conda_env` is set.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param dry_run If `TRUE`, return the command without executing it.
+#' @param verbose Integer verbosity level. `1L` (default) shows
+#'   Python-level section headers; `0L` is fully silent; `2L` echoes
+#'   the command and enables per-item debug output (`-v`).
+#' @return Path to `output_dir` (for use with `tar_file()`).
+#' @export
+sorter2_haplominer <- function(
+  input_dir,
+  output_dir,
+  organellar_ref,
+  coverage = 50,
+  depth = 5,
+  reads_dir = NULL,
+  python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
+  script_dir = NULL,
+  dry_run = FALSE,
+  verbose = 1L
+) {
+  input_dir <- sorter2_with_trailing_slash(input_dir)
+  output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
+  if (!startsWith(output_dir, "/")) {
+    output_dir <- file.path(getwd(), output_dir)
+  }
+  organellar_ref <- sorter2_require_file(organellar_ref, "organellar_ref")
+
+  args <- c(
+    "-wd",
+    input_dir,
+    "-outdir",
+    output_dir,
+    "-cpref",
+    organellar_ref,
+    "-c",
+    as.character(as.numeric(coverage)),
+    "-d",
+    as.character(as.numeric(depth))
+  )
+
+  if (!is.null(reads_dir)) {
+    reads_dir <- sorter2_with_trailing_slash(reads_dir)
+    args <- c(args, "-reads", reads_dir)
+  }
+  if (verbose >= 2L) args <- c(args, "-v")
+
+  res <- sorter2_run(
+    script = "SORTER2_HaplOMiner.py",
+    args = args,
+    python = python,
+    conda_env = conda_env,
+    conda = conda,
+    script_dir = script_dir,
+    dry_run = dry_run,
+    echo = (verbose >= 2L),
+    show_output = (verbose >= 1L)
+  )
+  if (dry_run) return(invisible(res))
+  output_dir
+}
+
 #' Run the SORTER2 Processor step
 #'
 #' @param input_dir Directory containing the SORTER2 pipeline outputs

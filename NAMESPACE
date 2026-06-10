@@ -3,6 +3,7 @@
 export(sorter2_filter_assemblies)
 export(sorter2_format_reads)
 export(sorter2_format_ref)
+export(sorter2_haplominer)
 export(sorter2_infer_hybrids)
 export(sorter2_processor)
 export(sorter2_run)

@@ -26,9 +26,7 @@ sorter2_processor(
 (\verb{diploids/}, \verb{diploidclusters/}, and optionally \verb{diploids_phased/} and
 \verb{phaseset/}).}
 
-\item{output_dir}{Directory where processed results will be written.
-Currently must equal \code{input_dir}; full separation will be supported in a
-future update.}
+\item{output_dir}{Directory where processed results will be written.}
 
 \item{repfilt}{Repeat filter threshold.}
 
