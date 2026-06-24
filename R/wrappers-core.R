@@ -596,6 +596,11 @@ sorter2_haplominer <- function(
 #' @param stage2 Logical flag for including Stage2 output.
 #' @param stage3 Logical flag for including Stage3 output.
 #' @param dovcf Logical flag for writing VCF output.
+#' @param reads_dir Optional directory containing raw FASTQ files
+#'   (`*_R1.fastq` / `*_R2.fastq`). Required when Stage 1A was run
+#'   with `trim = FALSE`. When `NULL` (the default), the Processor
+#'   expects Trim Galore output (`*_R1_val_1.fq`) inside each
+#'   `*_assembly/` subdirectory.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
@@ -615,6 +620,7 @@ sorter2_processor <- function(
   stage2 = FALSE,
   stage3 = FALSE,
   dovcf = TRUE,
+  reads_dir = NULL,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -644,6 +650,10 @@ sorter2_processor <- function(
     sorter2_bool_flag(dovcf)
   )
 
+  if (!is.null(reads_dir)) {
+    reads_dir <- sorter2_with_trailing_slash(reads_dir)
+    args <- c(args, "-reads", reads_dir)
+  }
   if (verbose >= 2L) args <- c(args, "-v")
 
   res <- sorter2_run(

@@ -27,6 +27,12 @@ parser.add_argument("-st2", "--stage2")
 parser.add_argument("-st3", "--stage3")
 parser.add_argument("-dovcf", "--dovcf")
 parser.add_argument(
+    "-reads", "--readsdir", default=None,
+    help="Directory containing raw FASTQ files "
+         "(*_R1.fastq / *_R2.fastq). Required when Stage 1A was "
+         "run without Trim Galore (trim=F)."
+)
+parser.add_argument(
     "-v", "--verbose", action="store_true", default=False,
     help="Print debug information during processing"
 )
@@ -39,6 +45,11 @@ quiet = {} if args.verbose else {
 outdir = args.outputdir if args.outputdir else args.workingdir
 outdir = outdir if outdir.endswith('/') else outdir + '/'
 os.makedirs(outdir, exist_ok=True)
+
+readsdir = None
+if args.readsdir is not None:
+    readsdir = (args.readsdir if args.readsdir.endswith('/')
+                else args.readsdir + '/')
 
 diploids = args.workingdir + 'diploids/'
 diploidclusters= args.workingdir + 'diploidclusters/'
@@ -278,28 +289,65 @@ if args.dovcf == 'T':
 	#Map Reads to consensus reference for each sample
 
 	for folder in os.listdir(args.workingdir):
-		if 'assembly' in folder:
-			os.chdir(args.workingdir + folder)
-			read = folder[:-8] + 'R1_val_1.fq'
-			R2 = folder[:-8] + 'R2_val_2.fq'
-			subprocess.call(["bwa mem -V %s %s %s > %smapreads.sam" % (refdir, read, R2, folder[:-8])], shell=True)
-			subprocess.call(["samtools sort  %smapreads.sam -o %s" % (folder[:-8], folder[:-8] + 'mapreads.bam')], shell=True)
-			os.remove(folder[:-8] + 'mapreads.sam')#Remove sam file
-			#Move bam file to workingdir for downstream use in mpileup and call command to generate SNPS
-			bampath = args.workingdir + folder + '/' + folder[:-8] + 'mapreads.bam'
-			shutil.move(bampath, vcfdir + folder[:-8] + 'mapreads.bam')
+		if folder.endswith('_assembly'):
+			asm_folder = args.workingdir + folder + '/'
+			sample_base = folder[:-8]  # e.g. 'SampleA_'
+			# Prefer TrimGalore output inside assembly dir;
+			# fall back to raw FASTQ files in readsdir (trim=F).
+			trimmed_R1 = asm_folder + sample_base + 'R1_val_1.fq'
+			trimmed_R2 = asm_folder + sample_base + 'R2_val_2.fq'
+			if os.path.exists(trimmed_R1):
+				read_path = trimmed_R1
+				R2_path = trimmed_R2
+			elif readsdir is not None:
+				raw_base = sample_base.rstrip('_')
+				read_path = readsdir + raw_base + '_R1.fastq'
+				R2_path = readsdir + raw_base + '_R2.fastq'
+				if not os.path.exists(read_path):
+					raise RuntimeError(
+						'reads not found for %s. '
+						'Checked %s and %s'
+						% (folder, trimmed_R1, read_path))
+			else:
+				raise RuntimeError(
+					'reads not found: %s. Pass -reads to specify '
+					'a raw FASTQ directory when Stage 1A was run '
+					'without Trim Galore.' % trimmed_R1)
+			prefix = asm_folder + sample_base
+			if args.verbose:
+				print(read_path)
+				print(R2_path)
+			subprocess.call([
+				"bwa mem -V %s %s %s > %smapreads.sam"
+				% (refdir, read_path, R2_path, prefix)
+			], shell=True, **quiet)
+			subprocess.call([
+				"samtools sort %smapreads.sam -o %smapreads.bam"
+				% (prefix, prefix)
+			], shell=True, **quiet)
+			os.remove(prefix + 'mapreads.sam')
+			bampath = prefix + 'mapreads.bam'
+			shutil.move(bampath, vcfdir + sample_base + 'mapreads.bam')
 			#Get readstats from bam
-			os.chdir(args.workingdir)
-			statfilename = folder[:-8] + "readstats.txt"
+			os.chdir(vcfdir)
+			statfilename = sample_base + "readstats.txt"
 			with open(os.path.join(vcfdir, statfilename), 'a+') as statfile:
-				os.chdir(vcfdir)
-				statfile.write( folder[:-8] + " Read Statistics" + '\n')
-				subprocess.call(["samtools flagstat %s >> %s" % (folder[:-8] + "mapreads.bam", statfilename)], shell=True)
-				#get read depth
-				subprocess.call(["samtools depth -a %s | awk '{c++;s+=$3}END{print s/c}' >> %s" % (folder[:-8] + "mapreads.bam", statfilename)], shell=True)
-				#get coverage
-				subprocess.call(["samtools depth -a %s | awk '{c++; if($3>0) total+=1}END{print (total/c)*100}' >> %s" % (folder[:-8] + "mapreads.bam", statfilename)], shell=True)
-				statfile.close()
+				statfile.write(sample_base + " Read Statistics" + '\n')
+				subprocess.call([
+					"samtools flagstat %s >> %s"
+					% (sample_base + "mapreads.bam", statfilename)
+				], shell=True)
+				subprocess.call([
+					"samtools depth -a %s | awk '{c++;s+=$3}END"
+					"{print s/c}' >> %s"
+					% (sample_base + "mapreads.bam", statfilename)
+				], shell=True)
+				subprocess.call([
+					"samtools depth -a %s | awk '{c++; if($3>0) "
+					"total+=1}END{print (total/c)*100}' >> %s"
+					% (sample_base + "mapreads.bam", statfilename)
+				], shell=True)
+			os.chdir(args.workingdir)
 
 	os.chdir(vcfdir)
 

@@ -195,6 +195,17 @@ test_that("wrapper dry-runs build expected command arguments", {
   expect_match(processor_res$command, "SORTER2_Processor.py")
   expect_match(processor_res$command, "'-outdir'")
   expect_match(processor_res$command, "'-dovcf' 'T'")
+
+  reads_dir <- tempfile("sorter2r-reads-")
+  dir.create(reads_dir)
+  processor_reads_res <- sorter2_processor(
+    input_dir = input_dir,
+    output_dir = output_dir,
+    reads_dir = reads_dir,
+    script_dir = script_dir,
+    dry_run = TRUE
+  )
+  expect_match(processor_reads_res$command, "'-reads'")
 })
 
 test_that("sorter2_stage3 warns and returns output_dir when hybrid_samples is empty", {

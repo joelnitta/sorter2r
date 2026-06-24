@@ -13,6 +13,7 @@ sorter2_processor(
   stage2 = FALSE,
   stage3 = FALSE,
   dovcf = TRUE,
+  reads_dir = NULL,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -39,6 +40,12 @@ sorter2_processor(
 \item{stage3}{Logical flag for including Stage3 output.}
 
 \item{dovcf}{Logical flag for writing VCF output.}
+
+\item{reads_dir}{Optional directory containing raw FASTQ files
+(\verb{*_R1.fastq} / \verb{*_R2.fastq}). Required when Stage 1A was run
+with \code{trim = FALSE}. When \code{NULL} (the default), the Processor
+expects Trim Galore output (\verb{*_R1_val_1.fq}) inside each
+\verb{*_assembly/} subdirectory.}
 
 \item{python}{Python executable to use.}
 
