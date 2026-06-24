@@ -197,6 +197,33 @@ test_that("wrapper dry-runs build expected command arguments", {
   expect_match(processor_res$command, "'-dovcf' 'T'")
 })
 
+test_that("sorter2_stage3 warns and returns output_dir when hybrid_samples is empty", {
+  script_dir <- tempfile("sorter2r-scripts-")
+  dir.create(script_dir)
+  file.create(file.path(script_dir, "SORTER2_Stage3_PhaseHybrids.py"))
+
+  ref_file <- tempfile("ref-", fileext = ".fasta")
+  file.create(ref_file)
+  phaseset_dir <- tempfile("sorter2r-phaseset-")
+  dir.create(phaseset_dir)
+  output_dir <- tempfile("sorter2r-output-")
+
+  expect_warning(
+    result <- sorter2_stage3(
+      input_phased     = tempdir(),
+      input_assemblies = tempdir(),
+      output_dir       = output_dir,
+      ref              = ref_file,
+      loci             = 10,
+      phaseset_dir     = phaseset_dir,
+      hybrid_samples   = character(0),
+      script_dir       = script_dir
+    ),
+    "hybrid_samples is empty"
+  )
+  expect_identical(result, output_dir)
+})
+
 test_that("wrapper dry-runs can use a conda environment", {
   script_dir <- tempfile("sorter2r-scripts-")
   dir.create(script_dir)

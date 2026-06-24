@@ -404,6 +404,14 @@ sorter2_stage3 <- function(
         ]
       }
       if (length(asm_dirs) == 0L) {
+        if (!is.null(hybrid_samples) && length(hybrid_samples) == 0L) {
+          warning(
+            "hybrid_samples is empty; no hybrid assemblies to process. ",
+            "Stage 3 skipped.",
+            call. = FALSE
+          )
+          return(invisible(output_dir))
+        }
         stop(
           "No *_assembly/ directories found in phaseset_dir: ", phaseset_dir,
           call. = FALSE
