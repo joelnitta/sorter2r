@@ -286,11 +286,20 @@ if args.dovcf == 'T':
 
 	refdir = vcfdir+countstr+'Loci_'+filtstr+'_'+mcstr+'MajorClusters_consensusrefs.fasta'
 
+	# Determine where *_assembly dirs live: stage1b puts them inside
+	# assembly_workfiles/ rather than directly in workingdir.
+	asm_root = args.workingdir
+	asm_workfiles = args.workingdir + 'assembly_workfiles/'
+	if (not any(f.endswith('_assembly')
+	            for f in os.listdir(asm_root))):
+		if os.path.isdir(asm_workfiles):
+			asm_root = asm_workfiles
+
 	#Map Reads to consensus reference for each sample
 
-	for folder in os.listdir(args.workingdir):
+	for folder in os.listdir(asm_root):
 		if folder.endswith('_assembly'):
-			asm_folder = args.workingdir + folder + '/'
+			asm_folder = asm_root + folder + '/'
 			sample_base = folder[:-8]  # e.g. 'SampleA_'
 			# Prefer TrimGalore output inside assembly dir;
 			# fall back to raw FASTQ files in readsdir (trim=F).
@@ -360,7 +369,7 @@ if args.dovcf == 'T':
 	#Make dictionary of individuals for readstats and heterozygosity
 	HETDICT= {}
 
-	for folder in os.listdir(args.workingdir):
+	for folder in os.listdir(asm_root):
 		if folder.endswith("assembly"):
 			ind=folder[:-9]
 			print(ind)
