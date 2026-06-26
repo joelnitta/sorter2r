@@ -670,3 +670,84 @@ sorter2_processor <- function(
   if (dry_run) return(invisible(res))
   output_dir
 }
+
+#' Process progenitor sequences from Stage 3 output
+#'
+#' Runs \code{SORTER2_ProgenitorProcessor.py}. Collapses progenitor IDs
+#' to user-defined clades, removes outgroup sequences, filters by minimum
+#' sequence count, removes duplicate IDs, and optionally retains only loci
+#' with at least two differentiated progenitor clades.
+#'
+#' The Stage 3 \code{input_dir} is never modified, so its targets hash
+#' remains stable.
+#'
+#' @param input_dir Directory containing Stage 3 FASTA output (read-only).
+#' @param output_dir Directory to write processed output into. Created if
+#'   it does not exist.
+#' @param mapfile Path to a CSV file with three columns:
+#'   \code{hybrid}, \code{progenitor}, \code{clade}.
+#' @param outgroups Path to a plain-text file listing outgroup IDs to
+#'   remove (one per line).
+#' @param minseq Minimum number of phased sequence pairs required per
+#'   progenitor set across all loci. The Python script doubles this
+#'   value internally before applying the filter. Default \code{1L}.
+#' @param filterundiff If \code{TRUE}, discard loci where a hybrid
+#'   sample has fewer than two distinct progenitor clades represented.
+#'   Default \code{FALSE}.
+#' @param python Python executable to use.
+#' @param conda_env Optional conda environment name.
+#' @param conda Conda executable to use when \code{conda_env} is set.
+#' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param dry_run If \code{TRUE}, return the command without executing it.
+#' @param verbose Integer verbosity level. \code{1L} (default) shows
+#'   Python-level section headers; \code{0L} is fully silent; \code{2L}
+#'   echoes the command and shows subprocess tool output.
+#' @return Path to \code{output_dir} (for use with \code{tar_file()}).
+#' @export
+sorter2_progenitor_processor <- function(
+  input_dir,
+  output_dir,
+  mapfile,
+  outgroups,
+  minseq = 1L,
+  filterundiff = FALSE,
+  python = Sys.getenv("SORTER2R_PYTHON", "python"),
+  conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
+  conda = Sys.getenv("SORTER2R_CONDA", "conda"),
+  script_dir = NULL,
+  dry_run = FALSE,
+  verbose = 1L
+) {
+  input_dir  <- sorter2_with_trailing_slash(input_dir)
+  output_dir <- normalizePath(output_dir, winslash = "/", mustWork = FALSE)
+  mapfile    <- sorter2_require_file(mapfile, "mapfile")
+  outgroups  <- sorter2_require_file(outgroups, "outgroups")
+
+  if (!dry_run) {
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  args <- c(
+    "-wd",    paste0(output_dir, "/"),
+    "-indir", input_dir,
+    "-map",   mapfile,
+    "-og",    outgroups,
+    "-min",   as.character(as.integer(minseq)),
+    "-dif",   sorter2_bool_flag(filterundiff)
+  )
+  if (verbose >= 2L) args <- c(args, "-v")
+
+  res <- sorter2_run(
+    script      = "SORTER2_ProgenitorProcessor.py",
+    args        = args,
+    python      = python,
+    conda_env   = conda_env,
+    conda       = conda,
+    script_dir  = script_dir,
+    dry_run     = dry_run,
+    echo        = (verbose >= 2L),
+    show_output = (verbose >= 1L)
+  )
+  if (dry_run) return(invisible(res))
+  output_dir
+}

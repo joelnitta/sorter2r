@@ -111,7 +111,8 @@ test_that("wrapper dry-runs build expected command arguments", {
     "SORTER2_Stage1B_AssembleOrthologs.py",
     "SORTER2_Stage2_PhaseOrthologs.py",
     "SORTER2_Stage3_PhaseHybrids.py",
-    "SORTER2_Processor.py"
+    "SORTER2_Processor.py",
+    "SORTER2_ProgenitorProcessor.py"
   )
   for (script in scripts) {
     file.create(file.path(script_dir, script))
@@ -206,6 +207,51 @@ test_that("wrapper dry-runs build expected command arguments", {
     dry_run = TRUE
   )
   expect_match(processor_reads_res$command, "'-reads'")
+
+  progenitor_res <- sorter2_progenitor_processor(
+    input_dir  = input_dir,
+    output_dir = output_dir,
+    mapfile    = ref_file,
+    outgroups  = ref_file,
+    script_dir = script_dir,
+    dry_run    = TRUE
+  )
+  expect_match(progenitor_res$command, "SORTER2_ProgenitorProcessor.py")
+  expect_match(progenitor_res$command, "'-wd'")
+  expect_match(progenitor_res$command, "'-indir'")
+  expect_match(progenitor_res$command, "'-map'")
+  expect_match(progenitor_res$command, "'-dif' 'F'")
+})
+
+test_that("sorter2_progenitor_processor dry-run builds expected args", {
+  script_dir <- tempfile("sorter2r-scripts-")
+  dir.create(script_dir)
+  file.create(file.path(script_dir, "SORTER2_ProgenitorProcessor.py"))
+
+  input_dir  <- tempfile("sorter2r-input-")
+  output_dir <- tempfile("sorter2r-output-")
+  dir.create(input_dir)
+  mapfile   <- tempfile("map-", fileext = ".csv")
+  outgroups <- tempfile("og-",  fileext = ".txt")
+  file.create(mapfile)
+  file.create(outgroups)
+
+  res <- sorter2_progenitor_processor(
+    input_dir    = input_dir,
+    output_dir   = output_dir,
+    mapfile      = mapfile,
+    outgroups    = outgroups,
+    minseq       = 20L,
+    filterundiff = TRUE,
+    script_dir   = script_dir,
+    dry_run      = TRUE
+  )
+
+  expect_true(res$dry_run)
+  expect_match(res$command, "SORTER2_ProgenitorProcessor.py")
+  expect_match(res$command, "'-indir'")
+  expect_match(res$command, "'-min' '20'")
+  expect_match(res$command, "'-dif' 'T'")
 })
 
 test_that("sorter2_stage3 warns and returns output_dir when hybrid_samples is empty", {
