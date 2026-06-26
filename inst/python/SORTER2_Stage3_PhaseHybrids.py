@@ -20,14 +20,20 @@ import argparse
 import glob
 
 
-def run_usearch(cmd):
+def run_usearch(cmd, extra_mounts=None):
     cwd = os.getcwd()
     if shutil.which('usearch'):
         subprocess.call('usearch ' + cmd, shell=True, **quiet)
     elif shutil.which('docker'):
+        mount_dirs = [cwd]
+        if extra_mounts:
+            for m in extra_mounts:
+                if m and m not in mount_dirs:
+                    mount_dirs.append(m)
+        vol_flags = ' '.join('-v %s:%s' % (d, d) for d in mount_dirs)
         docker_cmd = (
-            'docker run --rm -v %s:%s -w %s '
-            'joelnitta/usearch:latest %s' % (cwd, cwd, cwd, cmd)
+            'docker run --rm %s -w %s '
+            'joelnitta/usearch:latest %s' % (vol_flags, cwd, cmd)
         )
         subprocess.call(docker_cmd, shell=True, **quiet)
     else:
@@ -206,7 +212,11 @@ for folder in os.listdir(phaseset):
 os.chdir(diploidclusters)
 
 #make ublast data
-run_usearch("-makeudb_usearch ALLsamples_allcontigs_allbaitclusters_contigs_phased.fasta -output %s" % diploid_db)
+run_usearch(
+    "-makeudb_usearch ALLsamples_allcontigs_allbaitclusters_contigs_phased"
+    ".fasta -output %s" % diploid_db,
+    extra_mounts=[outdir]
+)
 
 #Map Contigs to Rereferences
 os.chdir(phaseset)
@@ -539,7 +549,13 @@ for folder in os.listdir(phaseset):
 			if file.endswith('_Final.fasta'):
 				os.chdir(phaseset+folder)
 				subprocess.call(["awk 'BEGIN{FS=\" \"}{if(!/>/){print toupper($0)}else{print $1}}' %s > %s_cap.fasta" % (file, file[:-6])], shell=True, **quiet)
-				run_usearch("-usearch_global %s -db %s -id 0.9 -top_hit_only -blast6out %s_hits.txt -strand plus" % (file[:-6]+'_cap.fasta', diploid_db, file[:-12]))
+				run_usearch(
+					"-usearch_global %s -db %s -id 0.9 -top_hit_only "
+					"-blast6out %s_hits.txt -strand plus" % (
+						file[:-6] + '_cap.fasta', diploid_db, file[:-12]
+					),
+					extra_mounts=[outdir]
+				)
 
 
 #Compile Polyploid into Diploid locus-cluster dataset, respectively
