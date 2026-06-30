@@ -605,6 +605,9 @@ sorter2_haplominer <- function(
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
+#' @param success_codes Integer vector of exit codes treated as success.
+#'   Default `0L`. Pass `c(0L, 1L)` if outputs are known to be correct
+#'   and the script is exiting 1 on a re-run (e.g. interrupted pipeline).
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @param verbose Integer verbosity level. `1L` (default) shows Python-level
 #'   section headers; `0L` is fully silent; `2L` echoes the command, enables
@@ -621,6 +624,7 @@ sorter2_processor <- function(
   stage3 = FALSE,
   dovcf = TRUE,
   reads_dir = NULL,
+  success_codes = 0L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -665,7 +669,8 @@ sorter2_processor <- function(
     script_dir = script_dir,
     dry_run = dry_run,
     echo = (verbose >= 2L),
-    show_output = (verbose >= 1L)
+    show_output = (verbose >= 1L),
+    success_codes = success_codes
   )
   if (dry_run) return(invisible(res))
   output_dir

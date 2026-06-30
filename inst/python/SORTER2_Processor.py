@@ -172,12 +172,15 @@ os.chdir(clustdir)
 #Count filtered sequences
 def count_files_in_folder(folder_path):
 	try:
-		# List all files and directories in the specified folder
 		items = os.listdir(folder_path)
-		
-		# Count only the files (exclude directories)
-		file_count = sum(1 for item in items if os.path.isfile(os.path.join(folder_path, item)))
-		
+		# Count only duprem_al.fasta files so outputcount is stable on
+		# re-runs (consensus_reference.fasta and consensusrefs.fasta
+		# files from a prior run would otherwise inflate the count).
+		file_count = sum(
+			1 for item in items
+			if os.path.isfile(os.path.join(folder_path, item))
+			and item.endswith('duprem_al.fasta')
+		)
 		return file_count
 	except Exception as e:
 		print(f"An error occurred: {e}")
@@ -348,12 +351,13 @@ if args.dovcf == 'T':
 				], shell=True)
 				subprocess.call([
 					"samtools depth -a %s | awk '{c++;s+=$3}END"
-					"{print s/c}' >> %s"
+					"{if(c>0)print s/c; else print 0}' >> %s"
 					% (sample_base + "mapreads.bam", statfilename)
 				], shell=True)
 				subprocess.call([
 					"samtools depth -a %s | awk '{c++; if($3>0) "
-					"total+=1}END{print (total/c)*100}' >> %s"
+					"total+=1}END{if(c>0)print (total/c)*100;"
+					" else print 0}' >> %s"
 					% (sample_base + "mapreads.bam", statfilename)
 				], shell=True)
 			os.chdir(args.workingdir)
