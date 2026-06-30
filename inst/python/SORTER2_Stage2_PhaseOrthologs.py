@@ -307,16 +307,16 @@ def _map_sample(folder):
             remove_if_exists(prefix + 'chimerasrt.bam')
             bam = prefix + 'mapreads.bam'
             stat_path = wf_folder + folder[:-8] + 'readstats.txt'
-            with open(stat_path, 'a+') as statfile:
+            with open(stat_path, 'w') as statfile:
                 statfile.write(folder[:-8] + " Read Statistics\n")
+                statfile.flush()  # ensure header is on disk before subprocess writes
                 subprocess.call(["samtools flagstat %s >> %s" % (bam, stat_path)], shell=True, **quiet)
                 subprocess.call([
-                    "samtools depth -a %s | awk '{c++;s+=$3}END{print s/c}' >> %s" % (
+                    "samtools depth -a %s | awk '{c++;s+=$3}END{if(c>0)print s/c; else print 0}' >> %s" % (
                     bam, stat_path)], shell=True, **quiet)
                 subprocess.call([
-                    "samtools depth -a %s | awk '{c++; if($3>0) total+=1}END{print (total/c)*100}' >> %s" % (
+                    "samtools depth -a %s | awk '{c++; if($3>0) total+=1}END{if(c>0)print (total/c)*100; else print 0}' >> %s" % (
                     bam, stat_path)], shell=True, **quiet)
-                statfile.close()
 
 
 #Map reads to consensus allele references, phase bi-allelic haplotypes.
