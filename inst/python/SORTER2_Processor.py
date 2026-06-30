@@ -88,6 +88,13 @@ def filter_fasta(fasta_dir, threshold, out_dir):
     output_dir = os.path.join(out_dir, f"{int(fl * 100)}rep")
     os.makedirs(output_dir, exist_ok=True)
 
+    # Clear stale files from a previous run so loci that no longer pass
+    # the threshold cannot persist with already-renamed FASTA headers,
+    # which would cause an IndexError in the keepal block.
+    for old in os.listdir(output_dir):
+        if old.endswith('.fasta'):
+            os.remove(os.path.join(output_dir, old))
+
     for fasta_file in os.listdir(fasta_dir):
         if fasta_file.endswith("_al.fasta"):
             fasta_path = os.path.join(fasta_dir, fasta_file)
