@@ -1,0 +1,50 @@
+url: ~
+
+template:
+  bootstrap: 5
+
+home:
+  title: sorter2r
+  description: >
+    R wrappers for the SORTER2 allopolyploid haplotype phasing pipeline.
+
+navbar:
+  structure:
+    left: [intro, reference, articles]
+    right: [github]
+  components:
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/joelnitta/sorter2r
+      aria-label: GitHub
+
+reference:
+  - title: Pipeline stages
+    desc: Core SORTER2 stages run in sequence on target-capture reads.
+    contents:
+      - sorter2_stage1a
+      - sorter2_stage1b
+      - sorter2_stage2
+      - sorter2_stage3
+  - title: Post-processing
+    desc: >
+      Downstream analysis tools run after phasing is complete.
+    contents:
+      - sorter2_processor
+      - sorter2_progenitor_processor
+      - sorter2_haplominer
+  - title: Utilities
+    desc: >
+      Helper functions for input preparation and workflow integration.
+    contents:
+      - sorter2_filter_assemblies
+      - sorter2_infer_hybrids
+      - sorter2_format_reads
+      - sorter2_format_ref
+      - sorter2_run
+
+articles:
+  - title: Tutorials
+    navbar: ~
+    contents:
+      - targets-pipeline

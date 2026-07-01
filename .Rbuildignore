@@ -11,3 +11,5 @@
 ^vignettes/precompile\.R$
 ^vignettes/.*\.Rmd\.orig$
 ^inst/dev-data-mini/_targets$
+^_pkgdown\.yml$
+^docs$

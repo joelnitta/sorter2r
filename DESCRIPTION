@@ -13,6 +13,7 @@ Imports:
     processx
 Suggests:
   knitr,
+  pkgdown,
   rmarkdown,
   targets,
   tarchetypes,

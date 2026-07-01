@@ -1,0 +1,23 @@
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/PROJECT_HANDOFF_PLAN.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/targets-pipeline.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/sorter2_filter_assemblies.html</loc></url>
+<url><loc>/reference/sorter2_format_reads.html</loc></url>
+<url><loc>/reference/sorter2_format_ref.html</loc></url>
+<url><loc>/reference/sorter2_haplominer.html</loc></url>
+<url><loc>/reference/sorter2_infer_hybrids.html</loc></url>
+<url><loc>/reference/sorter2_processor.html</loc></url>
+<url><loc>/reference/sorter2_progenitor_processor.html</loc></url>
+<url><loc>/reference/sorter2_run.html</loc></url>
+<url><loc>/reference/sorter2_stage1a.html</loc></url>
+<url><loc>/reference/sorter2_stage1b.html</loc></url>
+<url><loc>/reference/sorter2_stage2.html</loc></url>
+<url><loc>/reference/sorter2_stage3.html</loc></url>
+</urlset>
+
