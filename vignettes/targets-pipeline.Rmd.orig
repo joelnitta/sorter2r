@@ -1,0 +1,295 @@
+---
+title: "Using sorter2r with {targets}"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using sorter2r with {targets}}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+# Derive the package root from the location of this file so the vignette
+# works regardless of where knitr::knit() was called from.
+pkg_root <- normalizePath(
+  file.path(dirname(knitr::current_input()), "..")
+)
+knitr::opts_knit$set(root.dir = pkg_root)
+```
+
+```{r paths, include = FALSE}
+mini   <- file.path(pkg_root, "inst", "dev-data-mini")
+store  <- file.path(mini, "_targets")
+script <- file.path(mini, "_targets.R")
+```
+
+## Introduction
+
+The `sorter2r` package provides R wrappers for the
+[SORTER2](https://github.com/KEW-SORTER/SORTER2) Python pipeline, which
+assembles and phases allopolyploid sequences from target-capture
+sequencing data. The pipeline runs a series of computationally intensive
+steps—SPAdes assembly, read mapping, haplotype phasing—that can take
+hours to complete on real datasets.
+
+The [{targets}](https://docs.ropensci.org/targets/) package is a natural
+fit: it tracks the inputs and outputs of each stage and re-runs only the
+stages whose inputs have changed since the last successful run, making
+long pipelines both reproducible and efficient.
+
+This vignette walks through a complete sorter2r pipeline using {targets}.
+
+## Prerequisites
+
+The following software must be installed before running the pipeline.
+
+**Python tools** (install in a conda environment, typically named
+`"SORTER2"`):
+
+- [SORTER2](https://github.com/KEW-SORTER/SORTER2)
+- [SPAdes](https://github.com/ablab/spades) (genome assembler)
+- [bwa](https://github.com/lh3/bwa) (read mapper)
+- [samtools](https://www.htslib.org/) (SAM/BAM utilities)
+- [MAFFT](https://mafft.cbrc.jp/alignment/software/) (multiple
+  sequence aligner)
+- [vsearch](https://github.com/torognes/vsearch) or usearch
+  (sequence clustering)
+
+**R packages**:
+
+```r
+install.packages(c("targets", "tarchetypes"))
+remotes::install_github("joelnitta/sorter2r")
+```
+
+**Environment variables** (optional but recommended; avoids repeating
+`conda_env = "SORTER2"` in every call):
+
+```r
+Sys.setenv(SORTER2R_CONDA_ENV = "SORTER2")
+```
+
+## Input data layout
+
+sorter2r expects paired-end FASTQ files in a single directory, with
+filenames following the pattern `<sample>_R1.fastq` / `<sample>_R2.fastq`:
+
+```{r list-fastq}
+list.files(file.path(mini, "fastq"))
+```
+
+You also need a SORTER2 reference FASTA (a set of target loci) and,
+for organellar recovery with `sorter2_haplominer()`, a haploid
+organellar reference such as a complete plastome.
+
+## Defining the pipeline
+
+Create a `_targets.R` file in your project root. The pipeline flows
+linearly: each stage reads its predecessor's output directory and writes
+to its own dedicated output directory, ensuring {targets} can detect
+changes reliably.
+
+```{r pipeline-def, eval = FALSE}
+library(targets)
+library(tarchetypes)
+library(sorter2r)
+
+list(
+  # Input files ----
+  tar_file(reads_dir, "data/fastq"),
+  tar_file(ref, "data/reference/sorter2.fasta"),
+  tar_file(plastome_ref, "data/reference/plastome.fasta"),
+
+  # Stage 1A: assemble reads with SPAdes ----
+  tar_file(
+    stage1a,
+    sorter2_stage1a(
+      reads_dir  = reads_dir,
+      output_dir = "results/stage1a",
+      trim       = FALSE,
+      spades     = TRUE,
+      conda_env  = "SORTER2"
+    )
+  ),
+
+  # Filter to ingroup assemblies only ----
+  tar_file(
+    ingroup_assemblies,
+    sorter2_filter_assemblies(
+      input_dir       = stage1a,
+      output_dir      = "results/stage1a_ingroups",
+      exclude_samples = c("outgroup_sample1")
+    )
+  ),
+
+  # Stage 1B: cluster loci ----
+  tar_file(
+    stage1b,
+    sorter2_stage1b(
+      input_dir  = ingroup_assemblies,
+      output_dir = "results/stage1b",
+      ref        = ref,
+      loci       = 479L,
+      conda_env  = "SORTER2"
+    )
+  ),
+
+  # Infer hybrid candidates from cluster pattern ----
+  tar_target(
+    hybrids,
+    sorter2_infer_hybrids(stage1b)
+  ),
+
+  # Stage 2: phase orthologs ----
+  tar_file(
+    stage2,
+    sorter2_stage2(
+      input_assemblies = ingroup_assemblies,
+      input_clusters   = stage1b,
+      output_dir       = "results/stage2",
+      reads_dir        = reads_dir,
+      threads          = 6L,
+      conda_env        = "SORTER2"
+    )
+  ),
+
+  # Stage 3: phase hybrids ----
+  tar_file(
+    stage3,
+    sorter2_stage3(
+      input_phased     = stage2,
+      input_assemblies = ingroup_assemblies,
+      output_dir       = "results/stage3",
+      phaseset_dir     = ingroup_assemblies,
+      hybrid_samples   = hybrids$sample[hybrids$candidate],
+      reads_dir        = reads_dir,
+      ref              = ref,
+      loci             = 479L,
+      conda_env        = "SORTER2"
+    )
+  ),
+
+  # Summarize progenitor sequences ----
+  tar_file(
+    progenitor_res,
+    sorter2_progenitor_processor(
+      input_dir  = file.path(
+        stage3, "phaseset", "diploidclusters_phased"
+      ),
+      output_dir = "results/progenitor",
+      mapfile    = "data/reference/progenitor_map.csv",
+      outgroups  = "data/reference/outgroups.txt",
+      conda_env  = "SORTER2"
+    )
+  ),
+
+  # Processor: filter and summarize final alignments ----
+  tar_file(
+    processor_res,
+    sorter2_processor(
+      input_dir  = stage1b,
+      output_dir = "results/processor",
+      conda_env  = "SORTER2"
+    )
+  ),
+
+  # Hapl-O-Miner: recover organellar sequences ----
+  tar_file(
+    haplominer_res,
+    sorter2_haplominer(
+      input_dir       = stage1a,
+      output_dir      = "results/haplominer",
+      organellar_ref  = plastome_ref,
+      reads_dir       = reads_dir,
+      threads         = 6L,
+      clean_workfiles = TRUE,
+      conda_env       = "SORTER2"
+    )
+  )
+)
+```
+
+`tar_file()` (from {tarchetypes}) is shorthand for
+`tar_target(..., format = "file")`. It tells {targets} to track an
+output directory by hashing its contents; any change to the directory
+invalidates the target and triggers a re-run downstream.
+
+## Running the pipeline
+
+Call `tar_make()` to execute all targets in dependency order:
+
+```{r tar-make, message = TRUE}
+targets::tar_make(script = script, store = store)
+```
+
+## Caching: subsequent runs
+
+On a second `tar_make()` call, {targets} checks every target's inputs.
+Because nothing has changed, every target is skipped:
+
+```{r tar-make-2, message = TRUE}
+targets::tar_make(script = script, store = store)
+```
+
+This caching is especially valuable for long-running pipelines: if a
+stage fails partway through, only that stage (and its dependents)
+re-runs on the next `tar_make()`.
+
+## Inspecting the pipeline
+
+`tar_manifest()` lists all targets and their dependencies without
+running anything—useful for checking the pipeline structure before a
+long run or after modifying `_targets.R`:
+
+```{r tar-manifest}
+targets::tar_manifest(
+  script         = script,
+  callr_function = NULL
+)
+```
+
+## Examining results
+
+### Stage 2: read-mapping statistics
+
+Stage 2 writes a `readstats_fin.csv` with per-sample read-mapping
+metrics. The `readdepth` and `coverage` columns show mean read depth
+and the percentage of the reference covered, respectively:
+
+```{r stage2-stats}
+readstats <- read.csv(
+  file.path(mini, "stage2", "readstats_fin.csv")
+)
+readstats[, c("Individual", "mapped", "coverage")]
+```
+
+### Hybrid candidate inference
+
+`sorter2_infer_hybrids()` inspects the Stage 1B clustering pattern and
+returns a data frame flagging samples whose pattern is consistent with
+allopolyploidy:
+
+```{r hybrids}
+targets::tar_read(hybrids, store = store)
+```
+
+### Hapl-O-Miner: organellar sequence recovery
+
+`sorter2_haplominer()` maps reads to a haploid organellar reference and
+assembles per-sample consensus sequences. With `clean_workfiles = TRUE`,
+intermediate BAM files are removed after the run to save disk space.
+
+Consensus sequences that pass the coverage and depth thresholds:
+
+```{r haplominer-seqs}
+list.files(file.path(mini, "haplominer", "all_chloroplasts"))
+```
+
+Coverage and mean read-depth statistics for all samples:
+
+```{r haplominer-stats}
+hm_stats <- read.csv(
+  file.path(mini, "haplominer", "readstats_cp.csv")
+)
+hm_stats[, c("Individual", "readdepth", "coverage")]
+```

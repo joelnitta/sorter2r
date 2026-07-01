@@ -8,3 +8,6 @@
 ^_targets\.R$
 ^working\.R$
 ^sorter2r\.code-workspace$
+^vignettes/precompile\.R$
+^vignettes/.*\.Rmd\.orig$
+^inst/dev-data-mini/_targets$
