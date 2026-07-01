@@ -15,6 +15,7 @@ sorter2_processor(
   dovcf = TRUE,
   reads_dir = NULL,
   success_codes = 0L,
+  overwrite = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -51,6 +52,8 @@ expects Trim Galore output (\verb{*_R1_val_1.fq}) inside each
 \item{success_codes}{Integer vector of exit codes treated as success.
 Default \code{0L}. Pass \code{c(0L, 1L)} if outputs are known to be correct
 and the script is exiting 1 on a re-run (e.g. interrupted pipeline).}
+
+\item{overwrite}{If \code{TRUE}, delete \code{output_dir} before running.}
 
 \item{python}{Python executable to use.}
 
