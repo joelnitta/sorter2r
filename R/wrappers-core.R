@@ -382,7 +382,7 @@ sorter2_stage3 <- function(
       # Remove Stage3 outputs but keep phaseset/ unless phaseset_dir refreshes it
       entries <- list.files(output_dir, full.names = TRUE)
       keep <- if (is.null(phaseset_dir)) phaseset_path else character(0)
-      for (e in entries[entries != keep]) unlink(e, recursive = TRUE)
+      for (e in setdiff(entries, keep)) unlink(e, recursive = TRUE)
     } else if (dir.exists(output_dir) && !overwrite) {
       stop(
         sprintf(
