@@ -124,7 +124,9 @@ sorter2_stage1a <- function(
 #' @param ref Reference file path.
 #' @param loci Number of loci to process.
 #' @param clust2id Clustering threshold.
-#' @param recluster Logical flag for reclustering.
+#' @param recluster Logical flag for reclustering. When `TRUE`, reuses
+#'   `assembly_workfiles/` (assembled contigs) from a previous Stage1B run
+#'   in `output_dir` instead of re-assembling.
 #' @param contignum Contig count threshold.
 #' @param contiglen Contig length threshold.
 #' @param aliter Alignment iterations.
@@ -137,7 +139,10 @@ sorter2_stage1a <- function(
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
 #' @param script_dir Directory containing the vendored SORTER2 scripts.
-#' @param overwrite If `TRUE`, delete `output_dir` before running.
+#' @param overwrite If `TRUE`, remove existing output before running. When
+#'   `recluster = TRUE`, only prior Stage1B output is removed and
+#'   `assembly_workfiles/` is preserved so `-reclust` can reuse it.
+#'   Otherwise `output_dir` is deleted entirely.
 #' @param dry_run If `TRUE`, return the command without executing it.
 #' @return Path to `output_dir` (for use with `tar_file()`).
 #' @export
@@ -167,7 +172,30 @@ sorter2_stage1b <- function(
     output_dir <- file.path(getwd(), output_dir)
   }
   ref <- sorter2_require_file(ref, "ref")
-  if (!dry_run) sorter2_check_overwrite(output_dir, overwrite)
+
+  workfiles_path <- file.path(output_dir, "assembly_workfiles")
+
+  if (!dry_run) {
+    if (dir.exists(output_dir) && overwrite) {
+      if (recluster) {
+        # -reclust depends on assembly_workfiles/ from the previous run;
+        # only clear prior Stage1B output, not the workfiles it needs.
+        entries <- list.files(output_dir, full.names = TRUE)
+        for (e in setdiff(entries, workfiles_path)) unlink(e, recursive = TRUE)
+      } else {
+        message("Removing existing output: ", output_dir)
+        unlink(output_dir, recursive = TRUE)
+      }
+    } else if (dir.exists(output_dir) && !overwrite) {
+      stop(
+        sprintf(
+          "Output already exists: %s\nSet overwrite = TRUE to remove it and re-run.",
+          output_dir
+        ),
+        call. = FALSE
+      )
+    }
+  }
 
   args <- c(
     "-wd",

@@ -38,7 +38,9 @@ be created.}
 
 \item{clust2id}{Clustering threshold.}
 
-\item{recluster}{Logical flag for reclustering.}
+\item{recluster}{Logical flag for reclustering. When \code{TRUE}, reuses
+\verb{assembly_workfiles/} (assembled contigs) from a previous Stage1B run
+in \code{output_dir} instead of re-assembling.}
 
 \item{contignum}{Contig count threshold.}
 
@@ -62,7 +64,10 @@ per-item debug output (\code{-v}), and shows subprocess tool output.}
 
 \item{script_dir}{Directory containing the vendored SORTER2 scripts.}
 
-\item{overwrite}{If \code{TRUE}, delete \code{output_dir} before running.}
+\item{overwrite}{If \code{TRUE}, remove existing output before running. When
+\code{recluster = TRUE}, only prior Stage1B output is removed and
+\verb{assembly_workfiles/} is preserved so \code{-reclust} can reuse it.
+Otherwise \code{output_dir} is deleted entirely.}
 
 \item{dry_run}{If \code{TRUE}, return the command without executing it.}
 }

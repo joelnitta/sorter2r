@@ -267,7 +267,7 @@ if args.recluster == 'T':
 	columns = [x for x in map_contigs_to_baits_dir if x.endswith('_')]
 	header = ['bait']+columns
 	##print header
-	with open('ALLsamples_consensusallele_c1'+'_csl'+args.contiglen+'_csn'+args.contignum+'_'+'SUMMARY_TABLE.csv', 'wb') as outfile:
+	with open('ALLsamples_consensusallele_c1'+'_csl'+args.contiglen+'_csn'+args.contignum+'_'+'SUMMARY_TABLE.csv', 'w') as outfile:
 		writer = csv.writer(outfile)
 		writer.writerow(header)
 		first_value = list(DICT.values())[0]
