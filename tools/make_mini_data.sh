@@ -14,8 +14,8 @@
 #   bash tools/make_mini_data.sh [FULL_DATA_DIR] [MINI_DATA_DIR]
 #
 # Defaults:
-#   FULL_DATA_DIR = inst/dev-data
-#   MINI_DATA_DIR = inst/dev-data-mini
+#   FULL_DATA_DIR = dev-data
+#   MINI_DATA_DIR = dev-data-mini
 #
 # Requirements: bwa, samtools, seqtk (all available in the SORTER2 conda env)
 # Run from the package root, e.g.:
@@ -23,8 +23,8 @@
 
 set -euo pipefail
 
-FULL="${1:-inst/dev-data}"
-MINI="${2:-inst/dev-data-mini}"
+FULL="${1:-dev-data}"
+MINI="${2:-dev-data-mini}"
 
 REF="${FULL}/fermaily_perfamily2hybpiper_sorter2.fasta"
 

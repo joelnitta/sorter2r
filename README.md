@@ -100,6 +100,14 @@ Sys.setenv(SORTER2R_CONDA_ENV = "SORTER2")
    once the package is installed — it resolves automatically).
 3. Use a configured Python/conda environment that contains SORTER2 tools.
 
+Local dev/test datasets (`dev-data/`, `dev-data-mini/`) live at the package
+root, not under `inst/`. Anything under `inst/` is copied unconditionally
+during `R CMD INSTALL` (this is not affected by `.Rbuildignore`, which only
+controls what ships in the source tarball), so multi-GB data placed there
+gets re-copied into a temp library every time a vignette is built — which can
+exhaust disk space if the build is ever interrupted. Keep dev data out of
+`inst/`.
+
 ## Upstream sync workflow
 
 Run from package root:

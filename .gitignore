@@ -2,7 +2,7 @@
 .RData
 .Rproj.user
 .Rproj
-inst/dev-data*/
+dev-data*/
 working.R
 _targets*
 *.code-workspace

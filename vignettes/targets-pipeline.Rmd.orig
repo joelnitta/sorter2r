@@ -18,7 +18,7 @@ knitr::opts_knit$set(root.dir = pkg_root)
 ```
 
 ```{r paths, include = FALSE}
-mini   <- file.path(pkg_root, "inst", "dev-data-mini")
+mini   <- file.path(pkg_root, "dev-data-mini")
 store  <- file.path(mini, "_targets")
 script <- file.path(mini, "_targets.R")
 ```
