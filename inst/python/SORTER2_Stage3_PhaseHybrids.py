@@ -18,6 +18,7 @@ import re
 import itertools
 import argparse
 import glob
+from sorter2_readstats import parse_readstats
 
 
 def run_usearch(cmd, extra_mounts=None):
@@ -746,35 +747,9 @@ for samp in os.listdir(phaseset):
 						if args.verbose:
 							print(readstat)
 						with open(readstat, "r") as statfile:
-							lines_to_read = [16, 17]
-							for position, line in enumerate(statfile):
-								if '+' in line:
-									statlabela = line.split(" ")[3]
-									statlabel = statlabela.strip('\n')
-									statinta = line.split(" ")[0]
-									statint = statinta.strip('\n')
-									if args.verbose:
-										print(statlabel)
-									if args.verbose:
-										print(statint)
-									HETDICT[ind][statlabel]=[]
-									HETDICT[ind][statlabel].append(int(statint))
-								else:
-									if position in lines_to_read:
-										if position == 16:
-											statlabel = 'readdepth'
-											statint = line.strip('\n')
-											if args.verbose:
-												print(statlabel + ' = ' + statint)
-											HETDICT[ind][statlabel]=[]
-											HETDICT[ind][statlabel].append(int(float(statint)))
-										elif position == 17:
-											statlabel = 'coverage'
-											statint = line.strip('\n')
-											if args.verbose:
-												print(statlabel + ' = ' + statint)
-											HETDICT[ind][statlabel]=[]
-											HETDICT[ind][statlabel].append(int(float(statint)))
+							HETDICT[ind].update(
+								parse_readstats(statfile, verbose=args.verbose)
+							)
 
 os.chdir(phaseset)
 

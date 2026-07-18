@@ -14,6 +14,7 @@ CORE_SCRIPTS=(
   SORTER2_Stage3_PhaseHybrids.py
   SORTER2_Processor.py
   SORTER2_ProgenitorProcessor.py
+  sorter2_readstats.py
 )
 
 TMP_DIR="$(mktemp -d)"

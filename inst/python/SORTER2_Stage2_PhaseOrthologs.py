@@ -14,6 +14,7 @@ from shutil import copyfile
 import Bio
 from Bio import SeqIO
 from concurrent.futures import ProcessPoolExecutor
+from sorter2_readstats import parse_readstats
 
 
 def run_usearch(cmd):
@@ -531,35 +532,9 @@ for samp in os.listdir(workfilesdir):
 						if args.verbose:
 							print(readstat)
 						with open(samp_dir + readstat, "r") as statfile:
-							lines_to_read = [16, 17]
-							for position, line in enumerate(statfile):
-								if '+' in line:
-									statlabela = line.split(" ")[3]
-									statlabel = statlabela.strip('\n')
-									statinta = line.split(" ")[0]
-									statint = statinta.strip('\n')
-									if args.verbose:
-										print(statlabel)
-										if args.verbose:
-											print(statint)
-									HETDICT[ind][statlabel] = []
-									HETDICT[ind][statlabel].append(int(statint))
-								else:
-									if position in lines_to_read:
-										if position == 16:
-											statlabel = 'readdepth'
-											statint = line.strip('\n')
-											if args.verbose:
-												print(statlabel + ' = ' + statint)
-											HETDICT[ind][statlabel] = []
-											HETDICT[ind][statlabel].append(int(float(statint)))
-										elif position == 17:
-											statlabel = 'coverage'
-											statint = line.strip('\n')
-											if args.verbose:
-												print(statlabel + ' = ' + statint)
-											HETDICT[ind][statlabel] = []
-											HETDICT[ind][statlabel].append(int(float(statint)))
+							HETDICT[ind].update(
+								parse_readstats(statfile, verbose=args.verbose)
+							)
 
 #get readstat values
 het_values_list = list(HETDICT.values())
