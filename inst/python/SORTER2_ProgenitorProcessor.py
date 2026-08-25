@@ -4,6 +4,8 @@ import argparse
 import os
 from collections import defaultdict
 
+from sorter2_progenitor_match import match_progenitor_row
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-wd", "--workingdir")
 parser.add_argument("-indir", "--inputdir", default=None)
@@ -32,6 +34,11 @@ def rename_fasta_sequence_ids(input_folder, output_folder, csv_file):
     # Convert the CSV data into a list of dictionaries for easy lookup
     csv_data = df.to_dict(orient='records')
 
+    # Species-level (hybrid = bare species code) mapfile rows that
+    # actually got used, collected so the monophyly warning prints
+    # once per species rather than once per matched record.
+    species_level_matches = set()
+
     # Process each FASTA file in the input folder
     for fasta_filename in os.listdir(input_folder):
         if fasta_filename.endswith(".fasta"):
@@ -45,12 +52,11 @@ def rename_fasta_sequence_ids(input_folder, output_folder, csv_file):
                 for record in SeqIO.parse(fasta_path, "fasta"):
                     seq_id_parts = record.id.split('_')
 
-                    # Check if the first part of the sequence ID matches any ID in the CSV file
-                    for row in csv_data:
-                        if seq_id_parts[1] == row['hybrid'] and seq_id_parts[2] == row['progenitor']:
-                            # Replace the third underscore-delimited item
-                            seq_id_parts[2] = row['clade']
-                            break
+                    clade, warn_species_key = match_progenitor_row(seq_id_parts, csv_data)
+                    if clade is not None:
+                        seq_id_parts[2] = clade
+                    if warn_species_key is not None:
+                        species_level_matches.add(warn_species_key)
 
                     # Create the new sequence ID
                     new_seq_id = '_'.join(seq_id_parts)
@@ -62,6 +68,15 @@ def rename_fasta_sequence_ids(input_folder, output_folder, csv_file):
 
             if args.verbose:
                 print(f"Processed {fasta_filename} -> {new_fasta_path}")
+
+    for species_key in sorted(species_level_matches):
+        print(
+            f"Warning: mapfile row(s) for hybrid={species_key!r} matched by "
+            f"species code alone and applied to every voucher with this "
+            f"code. If {species_key!r} is not monophyletic, specify "
+            f"individual vouchers instead (e.g. "
+            f"'<voucher>_{species_key}')."
+        )
 
 # -map and -og are now full paths
 mapfile = args.mapfile
