@@ -721,7 +721,15 @@ sorter2_processor <- function(
 #' @param output_dir Directory to write processed output into. Created if
 #'   it does not exist.
 #' @param mapfile Path to a CSV file with three columns:
-#'   \code{hybrid}, \code{progenitor}, \code{clade}.
+#'   \code{hybrid}, \code{progenitor}, \code{clade}. \code{hybrid} may
+#'   be either a bare species code, applying to every voucher with
+#'   that code, or a \code{voucher_species} compound key (e.g.
+#'   \code{"Nitta4471_ointermedia"}), applying to that one voucher
+#'   only. A compound row takes precedence over a species-level row
+#'   for the same \code{progenitor} value. Use compound rows when a
+#'   species is not monophyletic and different vouchers need
+#'   different progenitor clades; a species-level match prints a
+#'   monophyly-reminder warning.
 #' @param outgroups Path to a plain-text file listing outgroup IDs to
 #'   remove (one per line).
 #' @param minseq Minimum number of phased sequence pairs required per
