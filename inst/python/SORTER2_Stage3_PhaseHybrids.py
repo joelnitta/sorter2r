@@ -19,6 +19,7 @@ import itertools
 import argparse
 import glob
 from sorter2_readstats import parse_readstats
+from sorter2_stage3_header import build_hybrid_header
 
 
 def run_usearch(cmd, extra_mounts=None):
@@ -57,6 +58,7 @@ parser.add_argument("-pq", "--phasequal")
 parser.add_argument("-al", "--aliter")
 parser.add_argument("-indel", "--indelrep")
 parser.add_argument("-fp", "--filterundiff")
+parser.add_argument("-specimen", "--tagspecimen", default="F")
 parser.add_argument("-reads", "--readsdir", default=None)
 parser.add_argument(
     "-v", "--verbose", action="store_true", default=False,
@@ -67,6 +69,7 @@ args = parser.parse_args()
 quiet = {} if args.verbose else {
     "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL
 }
+tag_specimen = args.tagspecimen == 'T'
 # phaseddir: Stage 2 output dir — contains diploids_phased/
 phaseddir = args.phaseddir if args.phaseddir.endswith('/') else args.phaseddir + '/'
 # assemblydir: Stage 1A output dir — contains *_assembly/ dirs for diploid samples
@@ -584,10 +587,10 @@ for folder in os.listdir(phaseset):
 											try:
 												splitline= line.split('_')
 												#print splitline
-												name = '>' + splithits2[0] + '_' + splithits2[1] +'_' +splitline[0].split('>')[1] + '_'  + splitline[1] +  '_' + splithits2[3]#see if any statement for broader annotation
+												name = build_hybrid_header(splithits2, splitline[0].split('>')[1], splitline[1], 'ph0', tag_specimen)
 												if args.verbose:
-													print(name.rstrip('\n') + '_ph0' + '\n')
-												baitcluster.write(name.rstrip('\n') + '_ph0' + '\n')
+													print(name + '\n')
+												baitcluster.write(name + '\n')
 												#seq = phfinal.next()
 												seq = next(phfinal)
 												#print seq
@@ -622,10 +625,10 @@ for folder in os.listdir(phaseset):
 											try:
 												splitline= line.split('_')
 												#print splitline
-												name = '>' + splithits2[0] + '_' + splithits2[1] +'_' +splitline[0].split('>')[1] + '_'  + splitline[1] +  '_' + splithits2[3]#see if any statement for broader annotation
+												name = build_hybrid_header(splithits2, splitline[0].split('>')[1], splitline[1], 'ph1', tag_specimen)
 												if args.verbose:
-													print(name.rstrip('\n') + '_ph1' + '\n')
-												baitcluster.write(name.rstrip('\n') + '_ph1' + '\n')
+													print(name + '\n')
+												baitcluster.write(name + '\n')
 												#seq = phfinal.next()
 												seq = next(phfinal)
 												#print seq

@@ -16,6 +16,7 @@ CORE_SCRIPTS=(
   SORTER2_ProgenitorProcessor.py
   sorter2_progenitor_match.py
   sorter2_readstats.py
+  sorter2_stage3_header.py
 )
 
 TMP_DIR="$(mktemp -d)"

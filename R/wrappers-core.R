@@ -359,6 +359,11 @@ sorter2_stage2 <- function(
 #' @param aliter Alignment iterations.
 #' @param indelrep Indel representation threshold.
 #' @param filterundiff Logical flag for filtering undifferentiated loci.
+#' @param tag_specimen Logical flag. When `TRUE`, a hybrid's alt-lineage
+#'   haplotype header also records the specific diploid specimen (voucher)
+#'   it matched, not just the species code, so a progenitor mapfile can
+#'   target a specific voucher. Default `FALSE` preserves the
+#'   original species-only header.
 #' @param verbose Integer verbosity level. `1L` (default) shows Python-level
 #'   section headers; `0L` is fully silent; `2L` echoes the command, enables
 #'   per-item debug output (`-v`), and shows subprocess tool output.
@@ -387,6 +392,7 @@ sorter2_stage3 <- function(
   aliter = 1000,
   indelrep = 0.1,
   filterundiff = FALSE,
+  tag_specimen = FALSE,
   verbose = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
@@ -488,7 +494,9 @@ sorter2_stage3 <- function(
     "-indel",
     as.character(indelrep),
     "-fp",
-    sorter2_bool_flag(filterundiff)
+    sorter2_bool_flag(filterundiff),
+    "-specimen",
+    sorter2_bool_flag(tag_specimen)
   )
   if (!is.null(reads_dir)) {
     reads_dir <- sorter2_with_trailing_slash(reads_dir)
