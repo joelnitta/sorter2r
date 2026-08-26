@@ -186,6 +186,7 @@ test_that("wrapper dry-runs build expected command arguments", {
   expect_match(stage3_res$command, "SORTER2_Stage3_PhaseHybrids.py")
   expect_match(stage3_res$command, "'-outdir'")
   expect_match(stage3_res$command, "'-fp' 'F'")
+  expect_match(stage3_res$command, "'-specimen' 'F'")
 
   processor_res <- sorter2_processor(
     input_dir = input_dir,
@@ -221,6 +222,31 @@ test_that("wrapper dry-runs build expected command arguments", {
   expect_match(progenitor_res$command, "'-indir'")
   expect_match(progenitor_res$command, "'-map'")
   expect_match(progenitor_res$command, "'-dif' 'F'")
+})
+
+test_that("sorter2_stage3 tag_specimen dry-run builds expected args", {
+  script_dir <- tempfile("sorter2r-scripts-")
+  dir.create(script_dir)
+  file.create(file.path(script_dir, "SORTER2_Stage3_PhaseHybrids.py"))
+
+  input_dir  <- tempfile("sorter2r-input-")
+  output_dir <- tempfile("sorter2r-output-")
+  ref_file   <- tempfile("sorter2r-ref-", fileext = ".fasta")
+  dir.create(input_dir)
+  file.create(ref_file)
+
+  res <- sorter2_stage3(
+    input_phased     = input_dir,
+    input_assemblies = input_dir,
+    output_dir       = output_dir,
+    ref              = ref_file,
+    loci             = 10,
+    tag_specimen     = TRUE,
+    script_dir       = script_dir,
+    dry_run          = TRUE
+  )
+
+  expect_match(res$command, "'-specimen' 'T'")
 })
 
 test_that("sorter2_progenitor_processor dry-run builds expected args", {

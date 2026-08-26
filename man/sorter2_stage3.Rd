@@ -19,6 +19,7 @@ sorter2_stage3(
   aliter = 1000,
   indelrep = 0.1,
   filterundiff = FALSE,
+  tag_specimen = FALSE,
   verbose = 1L,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
@@ -67,6 +68,12 @@ output (\verb{*_R1_val_1.fq}) inside each \verb{phaseset/*_assembly/} subdirecto
 \item{indelrep}{Indel representation threshold.}
 
 \item{filterundiff}{Logical flag for filtering undifferentiated loci.}
+
+\item{tag_specimen}{Logical flag. When \code{TRUE}, a hybrid's alt-lineage
+haplotype header also records the specific diploid specimen (voucher)
+it matched, not just the species code, so a progenitor mapfile can
+target a specific voucher. Default \code{FALSE} preserves the
+original species-only header.}
 
 \item{verbose}{Integer verbosity level. \code{1L} (default) shows Python-level
 section headers; \code{0L} is fully silent; \code{2L} echoes the command, enables

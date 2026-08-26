@@ -33,7 +33,10 @@ REF="${FULL}/fermaily_perfamily2hybpiper_sorter2.fasta"
 LOCI=(1 2 3 4 5 6 7 8 9 10)
 
 # Samples: <name>  (expects <name>_R1.fastq and <name>_R2.fastq in FULL)
-DIPLOID_SAMPLES=(Iimura12_cthysanostomum)
+# Iimura12/Iimura13 are two distinct diploid vouchers of the same
+# species (cthysanostomum), needed to reproduce/test joelnitta/sorter2r#16
+# (Stage 3 discarding which specific voucher a hybrid haplotype matched).
+DIPLOID_SAMPLES=(Iimura12_cthysanostomum Iimura13_cthysanostomum)
 HYBRID_SAMPLES=(Iimura18_cthysanostomum Iimura46_cgrande)
 ALL_SAMPLES=("${DIPLOID_SAMPLES[@]}" "${HYBRID_SAMPLES[@]}")
 

@@ -232,8 +232,8 @@ if args.filterundiff == 'T':
             header_items = record.description.split("_")
             sample_id = tuple(header_items[:2])
 
-            if len(header_items) == 4:
-                # Get sequences with 4 tab-delimited items
+            if len(header_items) >= 4:
+                # Get hybrid sequences (4 items, or 5 with a tagged specimen)
                 if sample_id not in grouped_sequences:
                     grouped_sequences[sample_id] = set()
 
