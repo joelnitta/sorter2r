@@ -544,6 +544,10 @@ sorter2_stage3 <- function(
 #'   subdirectory.
 #' @param threads Number of parallel worker processes for per-sample
 #'   mapping. Default `1L` (serial).
+#' @param bwa_threads Threads passed to each `bwa mem` call (`-t`). Runs
+#'   inside each of the `threads` worker processes, so total CPU usage is
+#'   `threads * bwa_threads` - keep the product within your core budget.
+#'   Default `1L` (matches the previous single-threaded behavior).
 #' @param clean_workfiles If `TRUE`, delete the intermediate workfiles
 #'   directory (BAMs, raw consensus FASTAs, per-sample stat files) after
 #'   the run completes. Saves substantial disk space; the compiled
@@ -567,6 +571,7 @@ sorter2_haplominer <- function(
   depth = 5,
   reads_dir = NULL,
   threads = 1L,
+  bwa_threads = 1L,
   clean_workfiles = FALSE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
@@ -595,6 +600,8 @@ sorter2_haplominer <- function(
     as.character(as.numeric(depth)),
     "-t",
     as.character(as.integer(threads)),
+    "-bwa_t",
+    as.character(as.integer(bwa_threads)),
     "-clean_workfiles",
     sorter2_bool_flag(clean_workfiles)
   )

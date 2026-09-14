@@ -22,6 +22,14 @@ parser.add_argument(
     help="Number of parallel worker processes for per-sample mapping"
 )
 parser.add_argument(
+    "-bwa_t", "--bwa_threads", type=int, default=1,
+    help=(
+        "Threads passed to each bwa mem call (-t). Runs inside each of the "
+        "--threads worker processes, so total CPU usage is "
+        "threads * bwa_threads - keep the product within your core budget."
+    )
+)
+parser.add_argument(
     "-clean_workfiles", "--clean_workfiles", default='F',
     help="Delete intermediate workfiles directory after run (T/F)"
 )
@@ -118,8 +126,8 @@ def _process_sample(folder):
         print('  R2: %s' % R2_path)
 
     subprocess.call(
-        ["bwa mem -V %s %s %s > %smapreads.sam" % (
-            cpref, read_path, R2_path, prefix)],
+        ["bwa mem -V -t %d %s %s %s > %smapreads.sam" % (
+            args.bwa_threads, cpref, read_path, R2_path, prefix)],
         shell=True, **quiet
     )
     subprocess.call(
