@@ -14,6 +14,7 @@ sorter2_haplominer(
   threads = 1L,
   bwa_threads = 1L,
   clean_workfiles = FALSE,
+  align = TRUE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -57,6 +58,17 @@ directory (BAMs, raw consensus FASTAs, per-sample stat files) after
 the run completes. Saves substantial disk space; the compiled
 \code{readstats_cp.csv} and final consensus FASTAs are unaffected.
 Default \code{FALSE}.}
+
+\item{align}{If \code{TRUE} (default), align the filtered whole-consensus
+sequences with mafft (fast single-pass mode) into
+\verb{HaplOMiner_*_filtered_al.fasta}. This is separate from, and not
+required for, the per-sample consensus FASTAs written to
+\verb{all_chloroplasts/}. Callers that re-split each consensus per-locus
+themselves (e.g. with BLAT) and never read this alignment should
+pass \code{FALSE} - even fast mode does not scale well to large sample
+groups (all-pairs distance calc on whole-organellar-length
+sequences with FFT disabled), and can run for hours once a group
+reaches dozens of samples.}
 
 \item{python}{Python executable to use.}
 
