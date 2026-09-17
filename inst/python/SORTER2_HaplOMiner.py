@@ -34,6 +34,19 @@ parser.add_argument(
     help="Delete intermediate workfiles directory after run (T/F)"
 )
 parser.add_argument(
+    "-align", "--align", default='T',
+    help=(
+        "Align the filtered whole-consensus sequences with mafft (T/F). "
+        "This is a single all-samples-at-once alignment of the full "
+        "organellar-length consensuses, separate from and not required "
+        "for the per-sample consensus FASTAs in all_chloroplasts/. Some "
+        "callers re-split each consensus per-locus themselves (e.g. via "
+        "BLAT) and never use this alignment; on a large sample group "
+        "even the fast mafft mode here can take hours, so those callers "
+        "should pass F."
+    )
+)
+parser.add_argument(
     "-v", "--verbose", action="store_true", default=False,
     help="Print debug information during processing"
 )
@@ -303,25 +316,34 @@ if passing_samples:
                 with open(cp_fasta, 'r') as inf:
                     outf.write(inf.read())
 
-    al_fasta = (
-        outdir
-        + 'HaplOMiner_coverage%s_depth%s_filtered_al.fasta'
-        % (cov_str, dep_str)
-    )
-    # '--auto' picks an O(L^2) progressive alignment that can take hours on
-    # whole-plastome-length (~100-150 kb) consensuses. This alignment is not
-    # used by every downstream workflow (e.g. goflag_filmies re-splits each
-    # consensus per locus with BLAT instead), so use a fast single-pass
-    # progressive alignment here; callers needing higher accuracy can realign
-    # HaplOMiner_*_filtered.fasta themselves with '--auto' or similar.
-    print('HaplOMiner: aligning filtered sequences with mafft (fast mode)')
-    subprocess.call(
-        [
-            'mafft --retree 1 --maxiterate 0 --nofft --thread %d %s > %s'
-            % (args.threads, all_fasta, al_fasta)
-        ],
-        shell=True, **quiet
-    )
+    if args.align == 'T':
+        al_fasta = (
+            outdir
+            + 'HaplOMiner_coverage%s_depth%s_filtered_al.fasta'
+            % (cov_str, dep_str)
+        )
+        # '--auto' picks an O(L^2) progressive alignment that can take
+        # hours on whole-plastome-length (~100-150 kb) consensuses. This
+        # alignment is not used by every downstream workflow (e.g.
+        # goflag_filmies re-splits each consensus per locus with BLAT
+        # instead - pass -align F there), so use a fast single-pass
+        # progressive alignment here; callers needing higher accuracy can
+        # realign HaplOMiner_*_filtered.fasta themselves with '--auto' or
+        # similar. Even fast mode does not scale well to large sample
+        # groups - the all-pairs distance calc with FFT disabled can run
+        # for many hours on whole-plastome-length sequences once the
+        # group is dozens of samples - so -align F is recommended for any
+        # caller that does not need this specific alignment.
+        print('HaplOMiner: aligning filtered sequences with mafft (fast mode)')
+        subprocess.call(
+            [
+                'mafft --retree 1 --maxiterate 0 --nofft --thread %d %s > %s'
+                % (args.threads, all_fasta, al_fasta)
+            ],
+            shell=True, **quiet
+        )
+    else:
+        print('HaplOMiner: skipping whole-consensus alignment (-align F)')
 
 if args.clean_workfiles == 'T' and os.path.isdir(workfilesdir):
     shutil.rmtree(workfilesdir)
