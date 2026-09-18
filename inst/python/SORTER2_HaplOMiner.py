@@ -22,8 +22,29 @@ parser.add_argument(
     help="Number of parallel worker processes for per-sample mapping"
 )
 parser.add_argument(
+    "-bwa_t", "--bwa_threads", type=int, default=1,
+    help=(
+        "Threads passed to each bwa mem call (-t). Runs inside each of the "
+        "--threads worker processes, so total CPU usage is "
+        "threads * bwa_threads - keep the product within your core budget."
+    )
+)
+parser.add_argument(
     "-clean_workfiles", "--clean_workfiles", default='F',
     help="Delete intermediate workfiles directory after run (T/F)"
+)
+parser.add_argument(
+    "-align", "--align", default='T',
+    help=(
+        "Align the filtered whole-consensus sequences with mafft (T/F). "
+        "This is a single all-samples-at-once alignment of the full "
+        "organellar-length consensuses, separate from and not required "
+        "for the per-sample consensus FASTAs in all_chloroplasts/. Some "
+        "callers re-split each consensus per-locus themselves (e.g. via "
+        "BLAT) and never use this alignment; on a large sample group "
+        "even the fast mafft mode here can take hours, so those callers "
+        "should pass F."
+    )
 )
 parser.add_argument(
     "-v", "--verbose", action="store_true", default=False,
@@ -118,8 +139,8 @@ def _process_sample(folder):
         print('  R2: %s' % R2_path)
 
     subprocess.call(
-        ["bwa mem -V %s %s %s > %smapreads.sam" % (
-            cpref, read_path, R2_path, prefix)],
+        ["bwa mem -V -t %d %s %s %s > %smapreads.sam" % (
+            args.bwa_threads, cpref, read_path, R2_path, prefix)],
         shell=True, **quiet
     )
     subprocess.call(
@@ -295,16 +316,34 @@ if passing_samples:
                 with open(cp_fasta, 'r') as inf:
                     outf.write(inf.read())
 
-    al_fasta = (
-        outdir
-        + 'HaplOMiner_coverage%s_depth%s_filtered_al.fasta'
-        % (cov_str, dep_str)
-    )
-    print('HaplOMiner: aligning filtered sequences with mafft')
-    subprocess.call(
-        ['mafft --auto %s > %s' % (all_fasta, al_fasta)],
-        shell=True, **quiet
-    )
+    if args.align == 'T':
+        al_fasta = (
+            outdir
+            + 'HaplOMiner_coverage%s_depth%s_filtered_al.fasta'
+            % (cov_str, dep_str)
+        )
+        # '--auto' picks an O(L^2) progressive alignment that can take
+        # hours on whole-plastome-length (~100-150 kb) consensuses. This
+        # alignment is not used by every downstream workflow (e.g.
+        # goflag_filmies re-splits each consensus per locus with BLAT
+        # instead - pass -align F there), so use a fast single-pass
+        # progressive alignment here; callers needing higher accuracy can
+        # realign HaplOMiner_*_filtered.fasta themselves with '--auto' or
+        # similar. Even fast mode does not scale well to large sample
+        # groups - the all-pairs distance calc with FFT disabled can run
+        # for many hours on whole-plastome-length sequences once the
+        # group is dozens of samples - so -align F is recommended for any
+        # caller that does not need this specific alignment.
+        print('HaplOMiner: aligning filtered sequences with mafft (fast mode)')
+        subprocess.call(
+            [
+                'mafft --retree 1 --maxiterate 0 --nofft --thread %d %s > %s'
+                % (args.threads, all_fasta, al_fasta)
+            ],
+            shell=True, **quiet
+        )
+    else:
+        print('HaplOMiner: skipping whole-consensus alignment (-align F)')
 
 if args.clean_workfiles == 'T' and os.path.isdir(workfilesdir):
     shutil.rmtree(workfilesdir)

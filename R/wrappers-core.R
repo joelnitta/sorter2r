@@ -544,11 +544,25 @@ sorter2_stage3 <- function(
 #'   subdirectory.
 #' @param threads Number of parallel worker processes for per-sample
 #'   mapping. Default `1L` (serial).
+#' @param bwa_threads Threads passed to each `bwa mem` call (`-t`). Runs
+#'   inside each of the `threads` worker processes, so total CPU usage is
+#'   `threads * bwa_threads` - keep the product within your core budget.
+#'   Default `1L` (matches the previous single-threaded behavior).
 #' @param clean_workfiles If `TRUE`, delete the intermediate workfiles
 #'   directory (BAMs, raw consensus FASTAs, per-sample stat files) after
 #'   the run completes. Saves substantial disk space; the compiled
 #'   `readstats_cp.csv` and final consensus FASTAs are unaffected.
 #'   Default `FALSE`.
+#' @param align If `TRUE` (default), align the filtered whole-consensus
+#'   sequences with mafft (fast single-pass mode) into
+#'   `HaplOMiner_*_filtered_al.fasta`. This is separate from, and not
+#'   required for, the per-sample consensus FASTAs written to
+#'   `all_chloroplasts/`. Callers that re-split each consensus per-locus
+#'   themselves (e.g. with BLAT) and never read this alignment should
+#'   pass `FALSE` - even fast mode does not scale well to large sample
+#'   groups (all-pairs distance calc on whole-organellar-length
+#'   sequences with FFT disabled), and can run for hours once a group
+#'   reaches dozens of samples.
 #' @param python Python executable to use.
 #' @param conda_env Optional conda environment name.
 #' @param conda Conda executable to use when `conda_env` is set.
@@ -567,7 +581,9 @@ sorter2_haplominer <- function(
   depth = 5,
   reads_dir = NULL,
   threads = 1L,
+  bwa_threads = 1L,
   clean_workfiles = FALSE,
+  align = TRUE,
   python = Sys.getenv("SORTER2R_PYTHON", "python"),
   conda_env = Sys.getenv("SORTER2R_CONDA_ENV", ""),
   conda = Sys.getenv("SORTER2R_CONDA", "conda"),
@@ -595,8 +611,12 @@ sorter2_haplominer <- function(
     as.character(as.numeric(depth)),
     "-t",
     as.character(as.integer(threads)),
+    "-bwa_t",
+    as.character(as.integer(bwa_threads)),
     "-clean_workfiles",
-    sorter2_bool_flag(clean_workfiles)
+    sorter2_bool_flag(clean_workfiles),
+    "-align",
+    sorter2_bool_flag(align)
   )
 
   if (!is.null(reads_dir)) {
